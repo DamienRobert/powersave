@@ -1,0 +1,6 @@
+#les fichiers de /usr/lib/pm-utils
+on notera que powersave reprend l'essentiel des réglages
+sauf le readahead et le timing du journal commit
+qui d'après
+https://bugs.launchpad.net/ubuntu/+source/pm-utils/+bug/900923
+ne changent pas grand chose à la batterie...
