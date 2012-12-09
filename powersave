@@ -43,7 +43,7 @@ echo $VMDIRTY_BACKGROUND > /proc/sys/vm/dirty_background_ratio
 echo $VMDIRTY_EXPIRE > /proc/sys/vm/dirty_expire_centisecs
 echo $VMDIRTY_WRITE > /proc/sys/vm/dirty_writeback_centisecs
 # disk powersave
-for disk in $DISK; do
+for disk in $DISKS; do
   hdparm $HDPARM $disk &> /dev/null
 done
 for i in /sys/class/scsi_host/host*/link_power_management_policy; do echo $SCSI_LINKPOWER > $i; done

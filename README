@@ -5,3 +5,7 @@ que j'ai sauvegardé dans powersave.orig (avec mes modifs)
 
 Pour la règle udev qui disable le polling, cf:
 http://cgit.freedesktop.org/udisks/commit/?id=fb86ef144bad470b3d8ed761c7bdbe94886e5edd
+
+Cf aussi:
+https://github.com/vodik/powersave/
+pour tout mettre dans des règles udev
