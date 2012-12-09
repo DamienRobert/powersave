@@ -3,6 +3,7 @@ touch /var/log/powersave.log
 echo "@`date --rfc-3339=seconds`- powersave: $1" >> /var/log/powersave.log
 
 . /etc/powersave.config
+PATH="/usr/sbin:/sbin:$PATH"
 
 init "$1"
 
