@@ -45,19 +45,19 @@ echo $VMDIRTY_EXPIRE > /proc/sys/vm/dirty_expire_centisecs
 echo $VMDIRTY_WRITE > /proc/sys/vm/dirty_writeback_centisecs
 # disk powersave
 for disk in $DISKS; do
-  exec hdparm $HDPARM $disk &> /dev/null
+  exec hdparm $HDPARM $disk >/dev/null &
 done
 for i in /sys/class/scsi_host/host*/link_power_management_policy; do echo $SCSI_LINKPOWER > $i; done
 # sound card powersave
 for i in /sys/module/snd_*/parameters/power_save; do echo $SND_POWERSAVE > $i; done
 for i in /sys/module/snd_*/parameters/power_save_controller; do echo $SND_POWERSAVECTRL > $i; done
 # wlan0 powersave
-exec iw dev $wlan $WLAN_MODE &> /dev/null
+exec iw dev $wlan $WLAN_MODE >/dev/null &
 # screen powersave
 for i in /sys/class/backlight/acpi_video*; do 
   get_brightness $1 $i
   cat >> /var/log/powersave.log <<EOF
-$BRIGHTNESS > $i/brightness
+$(basename $i)/brightness: $BRIGHTNESS
 EOF
   echo $BRIGHTNESS > "$i/brightness"
 done
