@@ -1,0 +1,66 @@
+#!/bin/bash
+# A script to enable laptop power saving features for #! & Debian GNU+linux.
+# http://crunchbanglinux.org/forums/topic/11954
+
+# List of modules to unload, space seperated. Edit depending on your hardware and preferences.
+modlist="uvcvideo"
+#desactivate webcams
+# Bus list for runtime pm. Probably shouldn't touch this.
+buslist="pci spi i2c"
+
+case "$1" in
+    true)
+    # Enable some power saving settings while on battery
+       # Set backlight brightness to 50%
+        BRIGHTNESS=$((`cat /sys/class/backlight/acpi_video0/max_brightness`/2))
+        echo $BRIGHTNESS > /sys/class/backlight/acpi_video0/brightness
+       # USB powersaving
+        for i in /sys/bus/usb/devices/*/power/autosuspend; do
+            echo 2 > $i
+        done
+       # Enable runtime power management. Suggested by powertop.
+        for bus in $buslist; do
+            for i in /sys/bus/$bus/devices/*/power/control; do
+                echo auto > $i
+            done
+       # cpu freqs
+        #cpupower-set  -g Powersave
+        #for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+        #  cpu=`basename "$cpu"`
+        #  number=${cpu#cpu};
+        #  cpufreq-set -c "$number" -g Powersave
+        #done
+       # Disable hardware modules to save power
+        for mod in $modlist; do
+            grep $mod /proc/modules >/dev/null || continue
+            modprobe -r $mod 2>/dev/null
+        done
+        done
+    ;;
+    false)
+       #Return settings to default on AC power
+        BRIGHTNESS=`cat /sys/class/backlight/acpi_video0/max_brightness`
+        echo $BRIGHTNESS > /sys/class/backlight/acpi_video0/brightness
+        for i in /sys/bus/usb/devices/*/power/autosuspend; do
+            echo -1 > $i
+        done
+        for bus in $buslist; do
+            for i in /sys/bus/$bus/devices/*/power/control; do
+                echo on > $i
+            done
+        done
+        #cpupower-set -c "$number" -g Ondemand
+        #for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+        #  cpu=`basename "$cpu"`
+        #  number=${cpu#cpu};
+        #  cpufreq-set -c "$number" -g Ondemand
+        #done
+        for mod in $modlist; do
+            if ! lsmod | grep $mod; then
+                modprobe $mod 2>/dev/null
+            fi
+        done
+    ;;
+esac
+
+exit 0
