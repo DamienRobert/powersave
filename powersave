@@ -1,6 +1,6 @@
 #!/bin/zsh
 touch /var/log/powersave.log
-echo "@`date --rfc-3339=seconds`- powersave: $1" >> /var/log/powersave.log
+echo "@`date --iso-8601=seconds`- powersave: $1" >> /var/log/powersave.log
 
 . /etc/powersave.config
 PATH="/usr/sbin:/sbin:$PATH"
