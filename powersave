@@ -5,7 +5,7 @@ echo "@`date --rfc-3339=seconds`- powersave: $1" >> /var/log/powersave.log
 . /etc/powersave.config
 PATH="/usr/sbin:/sbin:$PATH"
 
-init "$1"
+init $1
 
 cat >> /var/log/powersave.log <<EOF
 Bus power control: $BUSPOWERCONTROL
@@ -45,19 +45,19 @@ echo $VMDIRTY_EXPIRE > /proc/sys/vm/dirty_expire_centisecs
 echo $VMDIRTY_WRITE > /proc/sys/vm/dirty_writeback_centisecs
 # disk powersave
 for disk in $DISKS; do
-  hdparm $HDPARM $disk &> /dev/null
+  exec hdparm $HDPARM $disk &> /dev/null
 done
 for i in /sys/class/scsi_host/host*/link_power_management_policy; do echo $SCSI_LINKPOWER > $i; done
 # sound card powersave
 for i in /sys/module/snd_*/parameters/power_save; do echo $SND_POWERSAVE > $i; done
 for i in /sys/module/snd_*/parameters/power_save_controller; do echo $SND_POWERSAVECTRL > $i; done
 # wlan0 powersave
-iw dev $wlan $WLAN_MODE &> /dev/null
+exec iw dev $wlan $WLAN_MODE &> /dev/null
 # screen powersave
 for i in /sys/class/backlight/acpi_video*/brightness; do echo $BRIGHTNESS > $i; done
 xset $XSET_MODE
 xset dpms $DPMS
 
-post "$1"
+post $1
 
 exit 0
