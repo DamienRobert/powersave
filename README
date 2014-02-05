@@ -1,11 +1,9 @@
-Il s'agit d'un fork de https://github.com/Unia/Powersave
-Ce dernier est basé sur
+This is a fork of https://github.com/Unia/Powersave which was based on the
+thread from
 http://crunchbanglinux.org/forums/topic/11954
-que j'ai sauvegardé dans powersave.orig (avec mes modifs)
 
-Pour la règle udev qui disable le polling, cf:
+For more informations on the udev rule disabling the polling, see also
 http://cgit.freedesktop.org/udisks/commit/?id=fb86ef144bad470b3d8ed761c7bdbe94886e5edd
 
-Cf aussi:
+To put everything into udev rules, see
 https://github.com/vodik/powersave/
-pour tout mettre dans des règles udev
