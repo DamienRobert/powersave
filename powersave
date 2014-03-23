@@ -34,7 +34,7 @@ for i in /sys/bus/usb/devices/*/power/autosuspend; do echo $USBAUTOSUSPEND > $i;
 # nmi_watchdog
 echo $NMIWATCHDOG > /proc/sys/kernel/nmi_watchdog
 # cpu
-cpupower frequency-set  -g $CPUGOVERNOR
+exec cpupower frequency-set  -g $CPUGOVERNOR >/dev/null &
 # aspm
 echo $PCIE_ASPM > /sys/module/pcie_aspm/parameters/policy
 # kernel write mode
