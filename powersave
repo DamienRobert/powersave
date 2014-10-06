@@ -54,7 +54,7 @@ for i in /sys/module/snd_*/parameters/power_save_controller; do echo $SND_POWERS
 # wlan0 powersave
 exec iw dev $wlan $WLAN_MODE >/dev/null &
 # screen powersave
-for i in /sys/class/backlight/acpi_video*; do 
+for i in /sys/class/backlight/*; do
   get_brightness $1 $i
   cat >> /var/log/powersave.log <<EOF
 $(basename $i)/brightness: $BRIGHTNESS
