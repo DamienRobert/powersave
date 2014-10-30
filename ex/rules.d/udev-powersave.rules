@@ -1,0 +1,27 @@
+# vim: ft=udevrules
+# Brightness
+SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="/usr/bin/xset +dpms dpms 0 0 120"
+SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="1", RUN+="/usr/bin/xset -dpms"
+
+#hdparm
+ACTION=="add", KERNEL=="sda", ATTR{queue/rotational}=="1", RUN+="/sbin/hdparm -S 4 -B 254 -a 2048 /dev/$kernel"
+
+#net
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="eth*", RUN+="/usr/bin/ethtool -s %k wol d"
+#ACTION=="add", SUBSYSTEM=="net", KERNEL=="eth*" RUN+="/usr/bin/ip link set dev %k down"
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wlan*", RUN+="/usr/bin/iw dev %k set power_save on"
+
+#pci
+ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
+
+#sata
+ACTION=="add", SUBSYSTEM=="scsi_host", ATTR{link_power_management_policy}="min_power"
+
+#auto suspend
+SUBSYSTEM=="power_supply", ATTR{status}=="Discharging", ATTR{capacity}=="2", RUN+="/usr/bin/systemctl suspend"
+
+#usb
+ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend}="1"
+ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="auto"
+#If a product needs to have control on:
+ACTION=="add", SUBSYSTEM=="usb", ATTR{product}=="USB Receiver", ATTR{power/control}="on"
