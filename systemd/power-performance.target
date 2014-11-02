@@ -1,0 +1,4 @@
+[Unit]
+Description=System power management: performance mode
+DefaultDependencies=no
+Conflicts=power-save.target

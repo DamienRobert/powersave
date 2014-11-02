@@ -1,0 +1,8 @@
+[Unit]
+Description=Performance mode (global)
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/local/bin/powersave false
