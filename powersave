@@ -7,7 +7,8 @@ PATH="/usr/sbin:/sbin:$PATH"
 
 init $1
 
-cat >> /var/log/powersave.log <<EOF
+do_log() {
+	cat >> /var/log/powersave.log <<EOF
 Bus power control: $BUSPOWERCONTROL
 Usb auto suspend: $USBAUTOSUSPEND
 NMI watchdog: $NMIWATCHDOG
@@ -22,35 +23,54 @@ hdparms: $HDPARM_OPTS
 link power: $SCSI_LINKPOWER
 snd powersave: $SND_POWERSAVE
 snd power save controller: $SND_POWERSAVECTRL
-wlan: $WLAN_MODE
-xset: $XSET_MODE
-xset dpms: $DPMS
+wlan: $WLAN_OPTS
+xset: $XSET_OPTS
+xset dpms: $XSET_DPMS
 EOF
+}
+
+write_files() {
+	value=$1
+	shift
+	for file in $@; do
+		[[ -w $file ]] && echo $value > $file
+	done
+}
+
+write_globs() {
+	value=$1
+	shift
+	for glob in $@; do
+		write_files $value $~glob
+	done
+}
 
 # bus
-for i in /sys/bus/*/devices/*/power/control; do echo $BUSPOWERCONTROL > $i; done
+write_globs $BUSPOWERCONTROL $i /sys/bus/*/devices/*/power/control
 # usb autosuspend
-for i in /sys/bus/usb/devices/*/power/autosuspend; do echo $USBAUTOSUSPEND > $i; done
+write_globs $USBAUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
 # nmi_watchdog
-echo $NMIWATCHDOG > /proc/sys/kernel/nmi_watchdog
+write_file $NMIWATCHDOG /proc/sys/kernel/nmi_watchdog
 # cpu
-exec cpupower frequency-set  -g $CPUGOVERNOR >/dev/null &
+exec cpupower frequency-set -g $CPUGOVERNOR >/dev/null &
 # aspm
-echo $PCIE_ASPM > /sys/module/pcie_aspm/parameters/policy
+write_file $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
 # kernel write mode
-echo $LAPTOP_MODE> /proc/sys/vm/laptop_mode
-echo $VMDIRTY_RATIO > /proc/sys/vm/dirty_ratio
-echo $VMDIRTY_BACKGROUND > /proc/sys/vm/dirty_background_ratio
-echo $VMDIRTY_EXPIRE > /proc/sys/vm/dirty_expire_centisecs
-echo $VMDIRTY_WRITE > /proc/sys/vm/dirty_writeback_centisecs
+write_file $LAPTOP_MODE /proc/sys/vm/laptop_mode
+write_file $VMDIRTY_RATIO /proc/sys/vm/dirty_ratio
+write_file $VMDIRTY_BACKGROUND /proc/sys/vm/dirty_background_ratio
+write_file $VMDIRTY_EXPIRE /proc/sys/vm/dirty_expire_centisecs
+write_file $VMDIRTY_WRITE /proc/sys/vm/dirty_writeback_centisecs
 # disk powersave
 exec hdparm $HDPARM_OPTS $disks >/dev/null &
-for i in /sys/class/scsi_host/host*/link_power_management_policy; do echo $SCSI_LINKPOWER > $i; done
+write_globs $SCSI_LINKPOWER /sys/class/scsi_host/host*/link_power_management_policy
 # sound card powersave
-for i in /sys/module/snd_*/parameters/power_save; do echo $SND_POWERSAVE > $i; done
-for i in /sys/module/snd_*/parameters/power_save_controller; do echo $SND_POWERSAVECTRL > $i; done
+write_globs $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
+write_globs $SND_POWERSAVECTRL /sys/module/snd_*/parameters/power_save_controller
 # wlan0 powersave
-exec iw dev $wlan $WLAN_MODE >/dev/null &
+for wlan in $wlans; do
+	exec iw dev $wlan $WLAN_OPTS >/dev/null &
+done
 # screen powersave
 for i in /sys/class/backlight/*; do
   get_brightness $1 $i
@@ -59,8 +79,8 @@ $(basename $i)/brightness: $BRIGHTNESS
 EOF
   echo $BRIGHTNESS > "$i/brightness"
 done
-exec xset $XSET_MODE &
-exec xset dpms $DPMS &
+exec xset $XSET_OPTS &
+exec xset dpms $XSET_DPMS &
 
 post $1
 
