@@ -1,0 +1,8 @@
+#!/bin/bash
+
+#from: https://gist.github.com/Apsu/3433066
+if (($1)); then # 0 = battery
+  systemctl --no-block start power-performance.target
+else # 1 = plug
+  systemctl --no-block start power-save.target
+fi
