@@ -49,4 +49,16 @@ Further settings:
  (or use blockdev --setfram $readahead $disks)
  [default readahead on power is 256]
 - Use mount -o remount,commit=600 / &> /dev/null to increase the interval of periodic commit? [30 seconds by default; only for ext[34] fs]
+For instance from https://github.com/intelfx/power-management
+function handle_filesystems() {
+  while read DEV MOUNT FSTYPE REST; do
+    case "$FSTYPE" in
+      ext3|ext4)
+        echo "Configuring FS power-saving: $DEV [journal commit time: $COMMIT_TIME]"
+        mount "$DEV" -o "remount,commit=$COMMIT_TIME"
+        ;;
+    esac
+  done < /proc/mounts
+}
+
 

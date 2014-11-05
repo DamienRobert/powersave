@@ -53,6 +53,81 @@ get_brightness() {
 	esac
 }
 
+handle_laptop_mode() {
+	case $1 in
+		false)
+			#default arch linux settings
+			SYSCTL_OPTS=(
+				"vm.laptop_mode=0"
+				"vm.dirty_writeback_centisecs=500"
+				"vm.dirty_expire_centisecs=3000"
+				"vm.dirty_ratio=10"
+				"vm.dirty_background_ratio=5"
+			)
+			;;
+		*)
+			SYSCTL_OPTS=(
+				"vm.laptop_mode=5"
+				"vm.dirty_writeback_centisecs=60000"
+				"vm.dirty_expire_centisecs=60000"
+				"vm.dirty_ratio=90"
+				"vm.dirty_background_ratio=1"
+			)
+			;;
+	esac
+	echo "sysctl -> $SYSCTL_OPTS"
+	sysctl -e -w $SYSCTL_OPTS
+}
+
+handle_disks() {
+	case $1 in
+		false) # disabling power saving
+			HDPARM_OPTS=(-S 0 -B 254)
+			;;
+		*)
+			HDPARM_OPTS=(-S 120 -B 128) #-a 2048
+			;;
+	esac
+	# disks
+  echo "hdparm $disks -> $HDPARM_OPTS"
+	exec hdparm $HDPARM_OPTS $disks &
+}
+
+handle_cpu() {
+	CPU_GOVERNOR="Ondemand"
+	echo "Cpu governor: $CPU_GOVERNOR"
+	exec cpupower frequency-set -g $CPU_GOVERNOR &
+}
+
+handle_netdev{
+	case $1 in
+		false)
+			WLAN_OPTS=(set power_save off)
+			;;
+		*)
+			WLAN_OPTS=(set power_save on)
+			;;
+	esac
+	echo "iw $netdevs_wlan -> $WLAN_OPTS"
+	for wlan in $netdevs_wlan; do
+		exec iw dev $wlan $WLAN_OPTS &
+	done
+}
+
+handle_screen() {
+	echo "set screen dpms"
+	case $1 in
+		false)
+			exec xset -dpms &
+			exec xset dpms 0 0 0 &
+			;;
+		*)
+			exec xset +dpms &
+			exec xset dpms 0 0 120 &
+			;;
+	esac
+}
+
 orig_vars() {
 	#only run if disks is not defined
 	#to have empty disks just set disks=() in pre_vars
@@ -64,51 +139,22 @@ orig_vars() {
 	fi
 
 	BUS_POWERCONTROL="auto"
-	CPU_GOVERNOR="Ondemand"
 	SND_POWERCONTROL="Y"
 
 	case $1 in
-		false) # disabling power saving
-	USB_AUTOSUSPEND="2"
-	NMI_WATCHDOG="1"
-	PCIE_ASPM="default"
-	SATA_ALPM="max_performance"
-	SND_POWERSAVE="0"
-
-	HDPARM_OPTS=(-S 0 -B 254) #-a 2048
-	WLAN_OPTS=(set power_save off)
-	XSET_OPTS=("-dpms")
-	XSET_DPMS=(0 0 0)
-
-	#default arch linux settings
-	SYSCTL_OPTS=(
-		"vm.laptop_mode=0"
-		"vm.dirty_writeback_centisecs=500"
-		"vm.dirty_expire_centisecs=3000"
-		"vm.dirty_ratio=10"
-		"vm.dirty_background_ratio=5"
-	)
-	;;
+		false)
+			USB_AUTOSUSPEND="2"
+			NMI_WATCHDOG="1"
+			PCIE_ASPM="default"
+			SATA_ALPM="max_performance"
+			SND_POWERSAVE="0"
+			;;
 		*) # Enable power saving settings on battery
-	USB_AUTOSUSPEND="1"
-	NMI_WATCHDOG="0"
-	PCIE_ASPM="default"
-	SATA_ALPM="min_power"
-	SND_POWERSAVE="1"
-
-	HDPARM_OPTS=(-S 120 -B 128)
-	WLAN_OPTS=(set power_save on)
-	XSET_OPTS=("+dpms")
-	XSET_DPMS=(0 0 120)
-
-	SYSCTL_OPTS=(
-		"vm.laptop_mode=5"
-		"vm.dirty_writeback_centisecs=60000"
-		"vm.dirty_expire_centisecs=60000"
-		"vm.dirty_ratio=90"
-		"vm.dirty_background_ratio=1"
-	)
-	;;
+			USB_AUTOSUSPEND="1"
+			NMI_WATCHDOG="0"
+			PCIE_ASPM="default"
+			SATA_ALPM="min_power"
+			SND_POWERSAVE="1"
 esac
 }
 
@@ -139,25 +185,6 @@ orig_powersave() {
 	write_files $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
 	write_files $SND_POWERCONTROL /sys/module/snd_*/parameters/power_save_controller
 
-	# sysctl
-	echo "sysctl -> $SYSCTL_OPTS"
-	sysctl -e -w $SYSCTL_OPTS
-	# disks
-  echo "hdparm -> $HDPARM_OPTS"
-	exec hdparm $HDPARM_OPTS $disks &
-	# cpu
-	echo "Cpu governor: $CPU_GOVERNOR"
-	exec cpupower frequency-set -g $CPU_GOVERNOR &
-	# netdevs_wlan
-	echo "iw $netdevs_wlan -> $WLAN_OPTS"
-	for wlan in $netdevs_wlan; do
-		exec iw dev $wlan $WLAN_OPTS &
-	done
-	# screen
-	echo "xset -> $XSET_OPTS; xset dpms -> $XSET_DPMS"
-	exec xset $XSET_OPTS &
-	exec xset dpms $XSET_DPMS &
-
 	case $1 in
 		false)
 			#Only restore the on status for pci devices...
@@ -177,7 +204,7 @@ powersave() {
 
 #to change powersave settings, just redefine vars() and powersave() and
 #wrap around orig_vars and orig_powersave if needed
-[[ -r @ETC_DIR/powersave.config ]] && . @ETC_DIR/powersave.config
+[[ -r @ETC_DIR@/powersave.config ]] && . @ETC_DIR@/powersave.config
 
 vars $@
 powersave $@
