@@ -1,5 +1,16 @@
 #!/bin/zsh
+# vim: fdm=marker
 
+case $1 in
+	false)
+		mode="performance"
+		;;
+	*)
+		mode="powersave"
+		;;
+esac
+
+#Helper functions {{{1
 find_disks() {
 	local disk
 	for disk in /dev/sd?(N) /dev/hd?(N); do
@@ -36,7 +47,93 @@ write_files() {
 	fi
 }
 
-get_brightness() {
+# Powersave subfunctions {{{1
+handle_bus() { #{{{2
+	BUS_POWERCONTROL="auto"
+	case $mode in
+		performance)
+			USB_AUTOSUSPEND="2"
+			SATA_ALPM="max_performance"
+			;;
+		powersave)
+			USB_AUTOSUSPEND="1"
+			SATA_ALPM="min_power"
+			;;
+	esac
+	# bus
+	echo "Bus power control: $BUS_POWERCONTROL"
+	write_files $BUS_POWERCONTROL $i /sys/bus/*/devices/*/power/control
+	#scsi
+	echo "Sata ALPM: $SATA_ALPM"
+	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
+	# usb autosuspend
+	echo "Usb auto suspend: $USB_AUTOSUSPEND"
+	write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
+}
+
+handle_laptop_mode() { #{{{2
+	[[ -z $SYSCTL_OPTS ]] &&
+	case $mode in
+		performance)
+			#default arch linux settings
+			SYSCTL_OPTS=(
+				"vm.laptop_mode=0"
+				"vm.dirty_writeback_centisecs=500"
+				"vm.dirty_expire_centisecs=3000"
+				"vm.dirty_ratio=10"
+				"vm.dirty_background_ratio=5"
+			)
+			;;
+		powersave)
+			SYSCTL_OPTS=(
+				"vm.laptop_mode=5"
+				"vm.dirty_writeback_centisecs=60000"
+				"vm.dirty_expire_centisecs=60000"
+				"vm.dirty_ratio=90"
+				"vm.dirty_background_ratio=1"
+			)
+			;;
+	esac
+	echo "sysctl -> $SYSCTL_OPTS"
+	sysctl -e -w $SYSCTL_OPTS
+}
+
+handle_disks() { #{{{2
+	[[ -z $HDPARM_OPTS ]] && case $mode in
+		performance) # disabling power saving
+			HDPARM_OPTS=(-S 0 -B 254)
+			;;
+		powersave)
+			HDPARM_OPTS=(-S 120 -B 128) #-a 2048
+			;;
+	esac
+	# disks
+	echo "hdparm $disks -> $HDPARM_OPTS"
+	exec hdparm $HDPARM_OPTS $disks &
+}
+
+handle_cpu() { #{{{2
+	CPU_GOVERNOR=${CPU_GOVERNOR:-Ondemand}
+	echo "Cpu governor: $CPU_GOVERNOR"
+	exec cpupower frequency-set -g $CPU_GOVERNOR &
+}
+
+handle_netdev{ #{{{2
+	[[ -z $WLAN_POWERSAVE ]] && case $mode in
+		performance)
+			WLAN_POWERSAVE="on"
+			;;
+		powersave)
+			WLAN_POWERSAVE="off"
+			;;
+	esac
+	echo "iw powersave: $WLAN_POWERSAVE ($netdevs_wlan)"
+	for wlan in $netdevs_wlan; do
+		exec iw dev $wlan set power_save $WLAN_POWERSAVE &
+	done
+}
+
+get_brightness() { #{{{2
 	video=$2
 	MAX_BRIGHTNESS=9
 	[[ -r "$video/max_brightness" ]] && MAX_BRIGHTNESS=$(cat "$video/max_brightness")
@@ -52,161 +149,110 @@ get_brightness() {
 		;;
 	esac
 }
-
-handle_laptop_mode() {
-	case $1 in
-		false)
-			#default arch linux settings
-			SYSCTL_OPTS=(
-				"vm.laptop_mode=0"
-				"vm.dirty_writeback_centisecs=500"
-				"vm.dirty_expire_centisecs=3000"
-				"vm.dirty_ratio=10"
-				"vm.dirty_background_ratio=5"
-			)
-			;;
-		*)
-			SYSCTL_OPTS=(
-				"vm.laptop_mode=5"
-				"vm.dirty_writeback_centisecs=60000"
-				"vm.dirty_expire_centisecs=60000"
-				"vm.dirty_ratio=90"
-				"vm.dirty_background_ratio=1"
-			)
-			;;
-	esac
-	echo "sysctl -> $SYSCTL_OPTS"
-	sysctl -e -w $SYSCTL_OPTS
-}
-
-handle_disks() {
-	case $1 in
-		false) # disabling power saving
-			HDPARM_OPTS=(-S 0 -B 254)
-			;;
-		*)
-			HDPARM_OPTS=(-S 120 -B 128) #-a 2048
-			;;
-	esac
-	# disks
-  echo "hdparm $disks -> $HDPARM_OPTS"
-	exec hdparm $HDPARM_OPTS $disks &
-}
-
-handle_cpu() {
-	CPU_GOVERNOR="Ondemand"
-	echo "Cpu governor: $CPU_GOVERNOR"
-	exec cpupower frequency-set -g $CPU_GOVERNOR &
-}
-
-handle_netdev{
-	case $1 in
-		false)
-			WLAN_OPTS=(set power_save off)
-			;;
-		*)
-			WLAN_OPTS=(set power_save on)
-			;;
-	esac
-	echo "iw $netdevs_wlan -> $WLAN_OPTS"
-	for wlan in $netdevs_wlan; do
-		exec iw dev $wlan $WLAN_OPTS &
+handle_brightness() {
+	for i in /sys/class/backlight/*; do
+		get_brightness $1 $i
+		echo "$(basename $i)/brightness: $BRIGHTNESS"
+		echo $BRIGHTNESS > "$i/brightness"
 	done
 }
 
-handle_screen() {
+handle_screen() { #{{{2
 	echo "set screen dpms"
-	case $1 in
-		false)
+	case $mode in
+		performance)
 			exec xset -dpms &
 			exec xset dpms 0 0 0 &
 			;;
-		*)
+		powersave)
 			exec xset +dpms &
 			exec xset dpms 0 0 120 &
 			;;
 	esac
 }
 
-orig_vars() {
-	#only run if disks is not defined
-	#to have empty disks just set disks=() in pre_vars
-	if [[ -z ${disks+defined} ]]
-		find_disks
-	fi
-	if [[ -z ${netdevs+defined} ]]
-		find_netdevs
-	fi
-
-	BUS_POWERCONTROL="auto"
-	SND_POWERCONTROL="Y"
-
-	case $1 in
-		false)
-			USB_AUTOSUSPEND="2"
-			NMI_WATCHDOG="1"
-			PCIE_ASPM="default"
-			SATA_ALPM="max_performance"
-			SND_POWERSAVE="0"
+handle_video() { #{{{2
+	case $mode in
+		performance)
+			PCIE_ASPM=${PCIE_ASPM:-default}
 			;;
-		*) # Enable power saving settings on battery
-			USB_AUTOSUSPEND="1"
-			NMI_WATCHDOG="0"
-			PCIE_ASPM="default"
-			SATA_ALPM="min_power"
-			SND_POWERSAVE="1"
-esac
-}
-
-orig_powersave() {
-	#brightness
-	for i in /sys/class/backlight/*; do
-		get_brightness $1 $i
-		echo "$(basename $i)/brightness: $BRIGHTNESS"
-		echo $BRIGHTNESS > "$i/brightness"
-	done
-	# bus
-  echo "Bus power control: $BUS_POWERCONTROL"
-	write_files $BUS_POWERCONTROL $i /sys/bus/*/devices/*/power/control
-	#scsi
-	echo "Sata ALPM: $SATA_ALPM"
-	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
-	# usb autosuspend
-	echo "Usb auto suspend: $USB_AUTOSUSPEND"
-	write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
-	# nmi_watchdog
-  echo "NMI watchdog: $NMI_WATCHDOG"
-	write_files $NMI_WATCHDOG /proc/sys/kernel/nmi_watchdog
+		powersave)
+			PCIE_ASPM=${PCIE_ASPM:-powersave}
+			;;
+	esac
 	# pcie
 	echo "PCIE aspm: $PCIE_ASPM"
 	write_files $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
+}
+
+handle_sound() { #{{{2
+	SND_POWERCONTROL="Y"
+	case $mode in
+		performance)
+			SND_POWERSAVE="0"
+			;;
+		powersave)
+			SND_POWERSAVE="1"
+			;;
+	esac
 	# sound card powersave
-  echo "Sound powersave: $SND_POWERSAVE; Sound controller: $SND_POWERCONTROL"
+	echo "Sound powersave: $SND_POWERSAVE; Sound controller: $SND_POWERCONTROL"
 	write_files $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
 	write_files $SND_POWERCONTROL /sys/module/snd_*/parameters/power_save_controller
+}
 
-	case $1 in
-		false)
+handle_nmi() { #{{{2
+	[[ -z $NMI_WATCHDOG ]] && case $mode in
+		performance)
+			NMI_WATCHDOG="1"
+			;;
+		powersave)
+			NMI_WATCHDOG="0"
+			;;
+	esac
+	# nmi_watchdog
+	echo "NMI watchdog: $NMI_WATCHDOG"
+	write_files $NMI_WATCHDOG /proc/sys/kernel/nmi_watchdog
+}
+
+# Global powersave function {{{1
+do_powersave() {
+	handle_bus
+	handle_laptop_mode
+	handle_disks
+	handle_cpu
+	handle_netdev
+	handle_brightness
+	handle_screen
+	handle_video
+	handle_sound
+	handle_nmi
+	case $mode in
+		performance)
 			#Only restore the on status for pci devices...
 			for i in /sys/bus/pci/devices/*/power/control; do echo on > $i; done
 			#iwconfig wlan0 txpower on
 			;;
 	esac
 }
-
-vars() {
-	orig_vars $@
-}
+#}}}1
 
 powersave() {
-	orig_powersave $@
+	do_powersave $@
 }
-
-#to change powersave settings, just redefine vars() and powersave() and
-#wrap around orig_vars and orig_powersave if needed
+#to change powersave settings, just redefine powersave() and wrap around
+#do_powersave if needed
 [[ -r @ETC_DIR@/powersave.config ]] && . @ETC_DIR@/powersave.config
 
-vars $@
+#only run if disks is not defined
+#to have empty disks just set disks=() in pre_vars
+if [[ -z ${disks+defined} ]]
+	find_disks
+fi
+if [[ -z ${netdevs+defined} ]]
+	find_netdevs
+fi
+
 powersave $@
 
 exit 0
