@@ -4,7 +4,7 @@ Description=Performance mode (global)
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStart=@LIB_DIR@/powersave false
+ExecStart=@BIN_DIR@/powersave false
 
 [Install]
 WantedBy=power-performance.target

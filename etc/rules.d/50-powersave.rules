@@ -1,1 +1,1 @@
-ACTION=="change", SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="[01]", RUN+="/usr/local/lib/powersave/bin/power %E{POWER_SUPPLY_ONLINE}"
+ACTION=="change", SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="[01]", RUN+="@BIN_DIR@/power-dispatcher %E{POWER_SUPPLY_ONLINE}"
