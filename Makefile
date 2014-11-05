@@ -1,23 +1,30 @@
-lib_dir=$(prefix)/usr/local/lib/powersave
+pkg_dir=$(prefix)/usr/local/lib/powersave
 etc_dir=$(prefix)/etc
+bin_dir=$(pkg_dir)/bin
+factory_dir=$(pkg_dir)/factory
+rsync=rsync -vcrlp
 
-define munge_install
-sed -e 's|@LIB_DIR@|$(lib_dir)|' \
-    $(1) >$(2)
+define munge
+sed -i -e 's|@LIB_DIR@|$(lib_dir)|' \
+    $(1)
 endef
 
-etc_files:=$(shell find etc -type f)
-$(DESTDIR)/$(etc_dir)/%: etc/%
-	mkdir -p $(@D)
-	cp $< $@
+define install_dir
+mkdir -p $(2)/
+$(rsync) $(1)/ $(2)
+endef
+
+define uninstall_dir
+$(foreach f,$(shell cd $(1)/; find . -type f), rm $(2)/$(f);)
+$(foreach f,$(shell cd $(1)/; find . -depth -type d), rmdir --ignore-fail-on-non-empty $(2)/$(f);)
+endef
 
 install:
-	$(patsubst %,$(DESTDIR)/$(etc_dir)/%,$(etc_files))
-	install -D -m 644 etc/systemd/power-performance.target $(DESTDIR)/etc/systemd/system/power-performance.target
-	install -D -m 644 etc/systemd/power-save.target $(DESTDIR)/etc/systemd/system/power-save.target
-	$(call munge_install,etc/systemd/power-performance.service,$(DESTDIR)/$(etc_dir)/systemd/system/power-performance.service)
-	$(call munge_install,etc/systemd/power-powersave.service,$(DESTDIR)/$(etc_dir)/systemd/system/power-powersave.service)
-	install -D -m 644 etc/rules.d/50-powersave.rules $(DESTDIR)/etc/rules.d/50-powersave.rules
-	install -D powersave $(DESTDIR)/usr/local/bin/powersave
-	install -D -m 644 powersave.config $(DESTDIR)/usr/local/factory/powersave.config
-	install -D -m 644 rules.d/50-powersave.rules $(DESTDIR)/etc/udev/rules.d/50-powersave.rules
+	$(call install_dir,etc,$(DESTDIR)/$(etc_dir))
+	$(call install_dir,bin,$(DESTDIR)/$(bin_dir))
+	$(call install_dir,factory,$(DESTDIR)/$(factory_dir))
+
+uninstall:
+	$(call uninstall_dir,etc,$(DESTDIR)/$(etc_dir))
+	$(call uninstall_dir,bin,$(DESTDIR)/$(bin_dir))
+	$(call uninstall_dir,factory,$(DESTDIR)/$(factory_dir))
