@@ -49,15 +49,15 @@ write_files() {
 
 # Powersave subfunctions {{{1
 handle_bus() { #{{{2
-	BUS_POWERCONTROL="auto"
+	BUS_POWERCONTROL=${BUS_POWERCONTROL:-auto}
 	case $mode in
 		performance)
-			USB_AUTOSUSPEND="2"
-			SATA_ALPM="max_performance"
+			USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-2}
+			SATA_ALPM=${SATA_ALPM:-max_performance}
 			;;
 		powersave)
-			USB_AUTOSUSPEND="1"
-			SATA_ALPM="min_power"
+			USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-1}
+			SATA_ALPM=${SATA_ALPM:min_power}
 			;;
 	esac
 	# bus
@@ -119,12 +119,12 @@ handle_cpu() { #{{{2
 }
 
 handle_netdev{ #{{{2
-	[[ -z $WLAN_POWERSAVE ]] && case $mode in
+	case $mode in
 		performance)
-			WLAN_POWERSAVE="on"
+			WLAN_POWERSAVE=${WLAN_POWERSAVE:-on}
 			;;
 		powersave)
-			WLAN_POWERSAVE="off"
+			WLAN_POWERSAVE=${WLAN_POWERSAVE:-off}
 			;;
 	esac
 	echo "iw powersave: $WLAN_POWERSAVE ($netdevs_wlan)"
@@ -138,22 +138,23 @@ get_brightness() { #{{{2
 	MAX_BRIGHTNESS=9
 	[[ -r "$video/max_brightness" ]] && MAX_BRIGHTNESS=$(cat "$video/max_brightness")
 	[[ -r "$video/brightness" ]] && CUR_BRIGHTNESS=$(cat "$video/brightness")
-	case $1 in
-		false)
+	case $mode in
+		performance)
 			BRIGHTNESS=$MAX_BRIGHTNESS
 			[[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -gt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
 		;;
-		true)
+		powersave)
 			BRIGHTNESS=$(($MAX_BRIGHTNESS/3))
 			[[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -lt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
 		;;
 	esac
 }
+
 handle_brightness() {
-	for i in /sys/class/backlight/*; do
-		get_brightness $1 $i
-		echo "$(basename $i)/brightness: $BRIGHTNESS"
-		echo $BRIGHTNESS > "$i/brightness"
+	for light in /sys/class/backlight/*; do
+		get_brightness $light $i
+		echo "$(basename $light)/brightness: $BRIGHTNESS"
+		echo $BRIGHTNESS > "$light/brightness"
 	done
 }
 
@@ -161,14 +162,17 @@ handle_screen() { #{{{2
 	echo "set screen dpms"
 	case $mode in
 		performance)
-			exec xset -dpms &
-			exec xset dpms 0 0 0 &
+			XSET_DPMS={XSET_DPMS:-"-dpms"}
+			[[ -z $XSET_DPMS_OPTIONS ]] && XSET_DPMS_OPTIONS=(0 0 0)
 			;;
 		powersave)
-			exec xset +dpms &
-			exec xset dpms 0 0 120 &
+			XSET_DPMS={XSET_DPSM:-"+dpms"}
+			[[ -z $XSET_DPMS_OPTIONS ]] && XSET_DPMS_OPTIONS=(0 0 120)
 			;;
 	esac
+	echo "xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS"
+	exec xset $XSET_DPMS &
+	exec xset dpms $XSET_DPMS_OPTIONS &
 }
 
 handle_video() { #{{{2
@@ -186,13 +190,13 @@ handle_video() { #{{{2
 }
 
 handle_sound() { #{{{2
-	SND_POWERCONTROL="Y"
+	SND_POWERCONTROL=${SND_POWERCONTROL:-Y}
 	case $mode in
 		performance)
-			SND_POWERSAVE="0"
+			SND_POWERSAVE=${SND_POWERSAVE:-0}
 			;;
 		powersave)
-			SND_POWERSAVE="1"
+			SND_POWERSAVE=${SND_POWERSAVE:-1}
 			;;
 	esac
 	# sound card powersave
@@ -202,12 +206,12 @@ handle_sound() { #{{{2
 }
 
 handle_nmi() { #{{{2
-	[[ -z $NMI_WATCHDOG ]] && case $mode in
+	case $mode in
 		performance)
-			NMI_WATCHDOG="1"
+			NMI_WATCHDOG=${NMI_WATCHDOG:-1}
 			;;
 		powersave)
-			NMI_WATCHDOG="0"
+			NMI_WATCHDOG=${NMI_WATCHDOG:-0}
 			;;
 	esac
 	# nmi_watchdog
