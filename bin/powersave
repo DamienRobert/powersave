@@ -1,5 +1,31 @@
 #!/bin/zsh
 
+find_disks() {
+	local disk
+	for disk in /dev/sd?(N) /dev/hd?(N); do
+		if udevadm info -q all -n $disk | egrep 'ID_BUS=(ata|scsi|ide)' >/dev/null; then
+			disks+=($disk)
+		fi
+	done
+}
+
+find_netdevs() {
+	local dev sysdir args
+	sysdir="/sys/class/net"
+	args=()
+	for dev in $sysdir/*(N); do
+		args+=$(basename $dev)
+	done
+	netdevs=()
+	netdevs_eth=()
+	netdevs_wlan=()
+	for dev in $args; do
+		netdevs+=($dev)
+		[[ -e $sysdir/$dev/device ]] && [[ ! -e $sysdir/$dev/wireless ]] && netdevs_eth+=($dev)
+		[[ -e $sysdir/$dev/wireless ]] && netdevs_wlan+=($dev)
+	done
+}
+
 write_files() {
 	value=$1
 	shift
@@ -14,23 +40,6 @@ write_globs() {
 	for glob in $@; do
 		write_files $value $~glob
 	done
-}
-
-get_brightness() {
-  video=$2
-  MAX_BRIGHTNESS=9
-  [[ -r "$video/max_brightness" ]] && MAX_BRIGHTNESS=$(cat "$video/max_brightness")
-  [[ -r "$video/brightness" ]] && CUR_BRIGHTNESS=$(cat "$video/brightness")
-  case $1 in
-    false)
-      BRIGHTNESS=$MAX_BRIGHTNESS
-      [[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -gt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
-    ;;
-    true)
-      BRIGHTNESS=$(($MAX_BRIGHTNESS/3))
-      [[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -lt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
-    ;;
-  esac
 }
 
 pre_vars() {
@@ -54,14 +63,12 @@ post_powersave() {
 [[ -r @FACTORY_DIR/powersave.config ]] && . @FACTORY_DIR/powersave.config
 [[ -r @ETC_DIR/powersave.config ]] && . @ETC_DIR/powersave.config
 
-
-pre_vars $@
-vars $@
-post_vars $@
-pre_powersave $@
+pre_vars $@ #for etc
+vars $@ #for factory
+post_vars $@ #for etc
+pre_powersave $@ #for factory
 powersave $@
-post_powersave $@
-
+post_powersave $@ #for factory
 
 do_log() {
 	cat >> /var/log/powersave.log <<EOF
@@ -103,7 +110,7 @@ write_file $VMDIRTY_EXPIRE /proc/sys/vm/dirty_expire_centisecs
 write_file $VMDIRTY_WRITE /proc/sys/vm/dirty_writeback_centisecs
 # disk powersave
 exec hdparm $HDPARM_OPTS $disks >/dev/null &
-write_globs $SCSI_LINKPOWER /sys/class/scsi_host/host*/link_power_management_policy
+write_globs $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
 # sound card powersave
 write_globs $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
 write_globs $SND_POWERSAVECTRL /sys/module/snd_*/parameters/power_save_controller
