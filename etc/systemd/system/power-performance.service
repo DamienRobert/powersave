@@ -1,6 +1,5 @@
 [Unit]
 Description=Performance mode (global)
-DefaultDependencies=no
 
 [Service]
 Type=oneshot

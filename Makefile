@@ -6,7 +6,13 @@ sed -e 's|@LIB_DIR@|$(lib_dir)|' \
     $(1) >$(2)
 endef
 
+etc_files:=$(shell find etc -type f)
+$(DESTDIR)/$(etc_dir)/%: etc/%
+	mkdir -p $(@D)
+	cp $< $@
+
 install:
+	$(patsubst %,$(DESTDIR)/$(etc_dir)/%,$(etc_files))
 	install -D -m 644 etc/systemd/power-performance.target $(DESTDIR)/etc/systemd/system/power-performance.target
 	install -D -m 644 etc/systemd/power-save.target $(DESTDIR)/etc/systemd/system/power-save.target
 	$(call munge_install,etc/systemd/power-performance.service,$(DESTDIR)/$(etc_dir)/systemd/system/power-performance.service)

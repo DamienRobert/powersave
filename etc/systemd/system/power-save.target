@@ -1,5 +1,4 @@
 [Unit]
 Description=System power management: power-saving mode
-DefaultDependencies=no
 Conflicts=power-performance.target
 After=power-performance.target

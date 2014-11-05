@@ -1,6 +1,5 @@
 [Unit]
 Description=Powersave mode (global)
-DefaultDependencies=no
 
 [Service]
 Type=oneshot
