@@ -16,11 +16,11 @@ munge_files=\
   $(DESTDIR)/$(bin_dir)/powersave
 
 define munge
-sed -i -e \
-  's|@PKG_DIR@|$(pkg_dir)|' \
-  's|@FACTORY_DIR@|$(factory_dir)|' \
-  's|@BIN_DIR@|$(bin_dir)|' \
-  's|@ETC_DIR@|$(etc_dir)|' \
+sed -i \
+  -e 's|@PKG_DIR@|$(pkg_dir)|' \
+  -e 's|@FACTORY_DIR@|$(factory_dir)|' \
+  -e 's|@BIN_DIR@|$(bin_dir)|' \
+  -e 's|@ETC_DIR@|$(etc_dir)|' \
     $(1)
 endef
 
@@ -47,7 +47,7 @@ install:
 	  $(eval in = $(word 1,$(subst :, ,$(inout)))) \
 	  $(eval out = $(word 2,$(subst :, ,$(inout)))) \
 	  $(call install_dir,$(in),$(out));)
-	$(foreach f,$(munge_files),$(call munge,$(f));)
+	$(call munge,$(munge_files))
 
 uninstall:
 	$(foreach inout,$(install_pattern), \
