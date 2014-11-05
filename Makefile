@@ -1,13 +1,11 @@
 pkg_dir=$(prefix)/usr/local/lib/powersave
 bin_dir=$(pkg_dir)/bin
-factory_dir=$(pkg_dir)/factory
 etc_dir=$(prefix)/etc
 rsync=rsync -vcrlp
 
 install_pattern=\
   etc:$(DESTDIR)/$(etc_dir) \
-  bin:$(DESTDIR)/$(bin_dir) \
-  factory:$(DESTDIR)/$(factory_dir)
+  bin:$(DESTDIR)/$(bin_dir)
 
 munge_files=\
   $(DESTDIR)/$(etc_dir)/systemd/system/power-performance.service \
@@ -18,7 +16,6 @@ munge_files=\
 define munge
 sed -i \
   -e 's|@PKG_DIR@|$(pkg_dir)|' \
-  -e 's|@FACTORY_DIR@|$(factory_dir)|' \
   -e 's|@BIN_DIR@|$(bin_dir)|' \
   -e 's|@ETC_DIR@|$(etc_dir)|' \
     $(1)
@@ -54,4 +51,4 @@ uninstall:
 	  $(eval in = $(word 1,$(subst :, ,$(inout)))) \
 	  $(eval out = $(word 2,$(subst :, ,$(inout)))) \
 	  $(call uninstall_dir,$(in),$(out));)
-	$(call rm_dirs,$(DESTDIR)/$(factory_dir) $(DESTDIR)/$(bin_dir) $(DESTDIR)/$(etc_dir) $(DESTDIR)/$(pkg_dir))
+	$(call rm_dirs,$(DESTDIR)/$(bin_dir) $(DESTDIR)/$(etc_dir) $(DESTDIR)/$(pkg_dir))
