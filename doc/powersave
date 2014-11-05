@@ -15,7 +15,7 @@ overkill, I leave everything to 'auto' except pci buses which are set ton
 'on'.
 
 Laptop Mode:
-cf power.d/laptomode in pm-utils or http://www.cyrius.com/debian/nslu2/linux-on-flash.html:
+cf power.d/laptomode in pm-utils or https://www.kernel.org/doc/Documentation/laptops/laptop-mode.txt or http://www.cyrius.com/debian/nslu2/linux-on-flash.html:
 # The kernel also has a setting known as laptop_mode, which makes it delay
 # writes to disk (initially intended to allow laptop disks to spin down
 # while not in use, hence the name). A number of files under /proc/sys/vm/

@@ -28,107 +28,158 @@ find_netdevs() {
 
 write_files() {
 	value=$1
-	shift
-	for file in $@; do
-		[[ -w $file ]] && echo $value > $file
-	done
+	if [[ -n $value ]]; then
+		shift
+		for file in $@; do
+			[[ -w $file ]] && echo $value > $file
+		done
+	fi
 }
 
-write_globs() {
-	value=$1
-	shift
-	for glob in $@; do
-		write_files $value $~glob
-	done
+get_brightness() {
+	video=$2
+	MAX_BRIGHTNESS=9
+	[[ -r "$video/max_brightness" ]] && MAX_BRIGHTNESS=$(cat "$video/max_brightness")
+	[[ -r "$video/brightness" ]] && CUR_BRIGHTNESS=$(cat "$video/brightness")
+	case $1 in
+		false)
+			BRIGHTNESS=$MAX_BRIGHTNESS
+			[[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -gt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
+		;;
+		true)
+			BRIGHTNESS=$(($MAX_BRIGHTNESS/3))
+			[[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -lt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
+		;;
+	esac
 }
 
-pre_vars() {
+orig_vars() {
+	#only run if disks is not defined
+	#to have empty disks just set disks=() in pre_vars
+	if [[ -z ${disks+defined} ]]
+		find_disks
+	fi
+	if [[ -z ${netdevs+defined} ]]
+		find_netdevs
+	fi
+
+	BUS_POWERCONTROL="auto"
+	CPU_GOVERNOR="Ondemand"
+	SND_POWERCONTROL="Y"
+
+	case $1 in
+		false) # disabling power saving
+	USB_AUTOSUSPEND="2"
+	NMI_WATCHDOG="1"
+	PCIE_ASPM="default"
+	SATA_ALPM="max_performance"
+	SND_POWERSAVE="0"
+
+	HDPARM_OPTS=(-S 0 -B 254) #-a 2048
+	WLAN_OPTS=(set power_save off)
+	XSET_OPTS=("-dpms")
+	XSET_DPMS=(0 0 0)
+
+	#default arch linux settings
+	SYSCTL_OPTS=(
+		"vm.laptop_mode=0"
+		"vm.dirty_writeback_centisecs=500"
+		"vm.dirty_expire_centisecs=3000"
+		"vm.dirty_ratio=10"
+		"vm.dirty_background_ratio=5"
+	)
+	;;
+		*) # Enable power saving settings on battery
+	USB_AUTOSUSPEND="1"
+	NMI_WATCHDOG="0"
+	PCIE_ASPM="default"
+	SATA_ALPM="min_power"
+	SND_POWERSAVE="1"
+
+	HDPARM_OPTS=(-S 120 -B 128)
+	WLAN_OPTS=(set power_save on)
+	XSET_OPTS=("+dpms")
+	XSET_DPMS=(0 0 120)
+
+	SYSCTL_OPTS=(
+		"vm.laptop_mode=5"
+		"vm.dirty_writeback_centisecs=60000"
+		"vm.dirty_expire_centisecs=60000"
+		"vm.dirty_ratio=90"
+		"vm.dirty_background_ratio=1"
+	)
+	;;
+esac
+}
+
+orig_powersave() {
+	#brightness
+	for i in /sys/class/backlight/*; do
+		get_brightness $1 $i
+		echo "$(basename $i)/brightness: $BRIGHTNESS"
+		echo $BRIGHTNESS > "$i/brightness"
+	done
+	# bus
+  echo "Bus power control: $BUS_POWERCONTROL"
+	write_files $BUS_POWERCONTROL $i /sys/bus/*/devices/*/power/control
+	#scsi
+	echo "Sata ALPM: $SATA_ALPM"
+	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
+	# usb autosuspend
+	echo "Usb auto suspend: $USB_AUTOSUSPEND"
+	write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
+	# nmi_watchdog
+  echo "NMI watchdog: $NMI_WATCHDOG"
+	write_files $NMI_WATCHDOG /proc/sys/kernel/nmi_watchdog
+	# pcie
+	echo "PCIE aspm: $PCIE_ASPM"
+	write_files $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
+	# sound card powersave
+  echo "Sound powersave: $SND_POWERSAVE; Sound controller: $SND_POWERCONTROL"
+	write_files $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
+	write_files $SND_POWERCONTROL /sys/module/snd_*/parameters/power_save_controller
+
+	# sysctl
+	echo "sysctl -> $SYSCTL_OPTS"
+	sysctl -e -w $SYSCTL_OPTS
+	# disks
+  echo "hdparm -> $HDPARM_OPTS"
+	exec hdparm $HDPARM_OPTS $disks &
+	# cpu
+	echo "Cpu governor: $CPU_GOVERNOR"
+	exec cpupower frequency-set -g $CPU_GOVERNOR &
+	# netdevs_wlan
+	echo "iw $netdevs_wlan -> $WLAN_OPTS"
+	for wlan in $netdevs_wlan; do
+		exec iw dev $wlan $WLAN_OPTS &
+	done
+	# screen
+	echo "xset -> $XSET_OPTS; xset dpms -> $XSET_DPMS"
+	exec xset $XSET_OPTS &
+	exec xset dpms $XSET_DPMS &
+
+	case $1 in
+		false)
+			#Only restore the on status for pci devices...
+			for i in /sys/bus/pci/devices/*/power/control; do echo on > $i; done
+			#iwconfig wlan0 txpower on
+			;;
+	esac
 }
 
 vars() {
-}
-
-post_vars() {
-}
-
-pre_powersave() {
+	orig_vars $@
 }
 
 powersave() {
+	orig_powersave $@
 }
 
-post_powersave() {
-}
-
-[[ -r @FACTORY_DIR/powersave.config ]] && . @FACTORY_DIR/powersave.config
+#to change powersave settings, just redefine vars() and powersave() and
+#wrap around orig_vars and orig_powersave if needed
 [[ -r @ETC_DIR/powersave.config ]] && . @ETC_DIR/powersave.config
 
-pre_vars $@ #for etc
-vars $@ #for factory
-post_vars $@ #for etc
-pre_powersave $@ #for factory
+vars $@
 powersave $@
-post_powersave $@ #for factory
-
-do_log() {
-	cat >> /var/log/powersave.log <<EOF
-Bus power control: $BUSPOWERCONTROL
-Usb auto suspend: $USBAUTOSUSPEND
-NMI watchdog: $NMIWATCHDOG
-Cpu governor: $CPUGOVERNOR
-PCIE aspm: $PCIE_ASPM
-Vm laptop mode: $LAPTOP_MODE
-Vm dirty ratio: $VMDIRTY_RATIO
-Vm dirty background ratio: $VMDIRTY_BACKGROUND
-Vm expire centisecs: $VMDIRTY_EXPIRE
-Vm dirty write centisecs: $VMDIRTY_WRITE
-hdparms: $HDPARM_OPTS
-link power: $SCSI_LINKPOWER
-snd powersave: $SND_POWERSAVE
-snd power save controller: $SND_POWERSAVECTRL
-wlan: $WLAN_OPTS
-xset: $XSET_OPTS
-xset dpms: $XSET_DPMS
-EOF
-}
-
-# bus
-write_globs $BUSPOWERCONTROL $i /sys/bus/*/devices/*/power/control
-# usb autosuspend
-write_globs $USBAUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
-# nmi_watchdog
-write_file $NMIWATCHDOG /proc/sys/kernel/nmi_watchdog
-# cpu
-exec cpupower frequency-set -g $CPUGOVERNOR >/dev/null &
-# aspm
-write_file $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
-# kernel write mode
-write_file $LAPTOP_MODE /proc/sys/vm/laptop_mode
-write_file $VMDIRTY_RATIO /proc/sys/vm/dirty_ratio
-write_file $VMDIRTY_BACKGROUND /proc/sys/vm/dirty_background_ratio
-write_file $VMDIRTY_EXPIRE /proc/sys/vm/dirty_expire_centisecs
-write_file $VMDIRTY_WRITE /proc/sys/vm/dirty_writeback_centisecs
-# disk powersave
-exec hdparm $HDPARM_OPTS $disks >/dev/null &
-write_globs $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
-# sound card powersave
-write_globs $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
-write_globs $SND_POWERSAVECTRL /sys/module/snd_*/parameters/power_save_controller
-# wlan0 powersave
-for wlan in $wlans; do
-	exec iw dev $wlan $WLAN_OPTS >/dev/null &
-done
-# screen powersave
-for i in /sys/class/backlight/*; do
-  get_brightness $1 $i
-  cat >> /var/log/powersave.log <<EOF
-$(basename $i)/brightness: $BRIGHTNESS
-EOF
-  echo $BRIGHTNESS > "$i/brightness"
-done
-exec xset $XSET_OPTS &
-exec xset dpms $XSET_DPMS &
-
-post $1
 
 exit 0
