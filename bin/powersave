@@ -143,9 +143,9 @@ handle_disks() { #{{{2
 	esac
 	# disks
 	echo "- hdparm $disks -> $HDPARM_OPTS"
-	exec hdparm $HDPARM_OPTS $disks &
+	hdparm $HDPARM_OPTS $disks
 	echo "- Disks readahead: $DISK_READAHEAD ($disks)"
-	exec blockdev --setfram $DISK_READAHEAD $disks &
+	blockdev --setfra $DISK_READAHEAD $disks
 }
 
 handle_cpu() { #{{{2
@@ -159,8 +159,8 @@ handle_cpu() { #{{{2
 			;;
 	esac
 	echo "- Cpu governor: $CPU_GOVERNOR; performance bias: $CPU_PERFORMANCE_BIAS"
-	exec cpupower frequency-set -g $CPU_GOVERNOR &
-	exec cpupower set -b $CPU_PERFORMANCE_BIAS &
+	cpupower frequency-set -g $CPU_GOVERNOR
+	cpupower set -b $CPU_PERFORMANCE_BIAS
 }
 
 handle_netdev() { #{{{2
@@ -176,16 +176,16 @@ handle_netdev() { #{{{2
 	esac
 	echo "- iw powersave: $WLAN_POWERSAVE ($netdevs_wlan)"
 	for wlan in $netdevs_wlan; do
-		exec iw dev $wlan set power_save $WLAN_POWERSAVE &
+		iw dev $wlan set power_save $WLAN_POWERSAVE
 	done
 	echo "- eth wol: $ETH_WOL ($netdevs_eth)"
 	for eth in $netdevs_eth; do
-		exec ethtool -s $eth wol $ETH_WOL &
+		ethtool -s $eth wol $ETH_WOL
 	done
 }
 
 get_brightness() { #{{{2
-	video=$2
+	video=$1
 	MAX_BRIGHTNESS=9
 	[[ -r "$video/max_brightness" ]] && MAX_BRIGHTNESS=$(cat "$video/max_brightness")
 	[[ -r "$video/brightness" ]] && CUR_BRIGHTNESS=$(cat "$video/brightness")
@@ -203,7 +203,7 @@ get_brightness() { #{{{2
 
 handle_brightness() {
 	for light in /sys/class/backlight/*; do
-		get_brightness $light $i
+		get_brightness $light
 		echo "- $(basename $light)/brightness: $BRIGHTNESS"
 		write_files $BRIGHTNESS "$light/brightness"
 	done
@@ -222,8 +222,8 @@ handle_screen() { #{{{2
 			;;
 	esac
 	echo "- xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS"
-	exec xset $XSET_DPMS &
-	exec xset dpms $XSET_DPMS_OPTIONS &
+	xset $XSET_DPMS
+	xset dpms $XSET_DPMS_OPTIONS
 }
 
 handle_video() { #{{{2

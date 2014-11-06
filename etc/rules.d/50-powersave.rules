@@ -1,1 +1,0 @@
-ACTION=="change", SUBSYSTEM=="power_supply", ENV{POWER_SUPPLY_ONLINE}=="[01]", RUN+="@BIN_DIR@/power-dispatcher %E{POWER_SUPPLY_ONLINE}"

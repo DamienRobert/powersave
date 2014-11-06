@@ -46,7 +46,7 @@ cf power.d/laptomode in pm-utils or https://www.kernel.org/doc/Documentation/lap
 
 Further settings:
 - add (-a 2048) to HDPARM_OPTS to augment readahead
- (or use blockdev --setfram $readahead $disks)
+ (or use blockdev --setfra $readahead $disks)
  [default readahead on power is 256]
 - Use mount -o remount,commit=600 / &> /dev/null to increase the interval of periodic commit? [30 seconds by default; only for ext[34] fs]
 For instance from https://github.com/intelfx/power-management
