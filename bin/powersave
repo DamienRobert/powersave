@@ -48,6 +48,20 @@ write_files() {
 }
 
 # Powersave subfunctions {{{1
+handle_modules() { {{{2
+	[[ -z $MODULES ]] && MODULES=(btusb)
+	echo "Modules: $MODULES"
+	case $mode in
+		performance)
+			#don't fork in case the other functions need the modules
+			modprobe $MODULES
+			;;
+		powersave)
+			modprobe -r $MODULES
+			;;
+	esac
+}
+
 handle_bus() { #{{{2
 	BUS_POWERCONTROL=${BUS_POWERCONTROL:-auto}
 	case $mode in
@@ -71,7 +85,7 @@ handle_bus() { #{{{2
 	write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
 }
 
-handle_laptop_mode() { #{{{2
+handle_sysctl() { #{{{2
 	[[ -z $SYSCTL_OPTS ]] &&
 	case $mode in
 		performance)
@@ -100,7 +114,7 @@ handle_laptop_mode() { #{{{2
 
 handle_disks() { #{{{2
 	case $mode in
-		performance) # disabling power saving
+		performance)
 			[[ -z $HDPARM_OPTS ]] && HDPARM_OPTS=(-S 0 -B 254)
 			DISK_READAHEAD=${DISK_READAHEAD:-256}
 			;;
@@ -240,8 +254,13 @@ handle_nmi() { #{{{2
 
 # Global powersave function {{{1
 do_powersave() {
+	case $mode in
+		performance)
+			handle_modules #at beginning
+			;;
+	esac
 	handle_bus
-	handle_laptop_mode
+	handle_sysctl
 	handle_disks
 	handle_cpu
 	handle_netdev
@@ -252,9 +271,12 @@ do_powersave() {
 	handle_nmi
 	case $mode in
 		performance)
-			#Only restore the on status for pci devices...
+			#Only restore the on status for pci devices
 			for i in /sys/bus/pci/devices/*/power/control; do echo on > $i; done
 			#iwconfig wlan0 txpower on
+			;;
+		powersave)
+			handle_modules #at end
 			;;
 	esac
 }
