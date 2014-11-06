@@ -10,7 +10,7 @@ install_pattern=\
 munge_files=\
   $(DESTDIR)/$(etc_dir)/systemd/system/power-performance.service \
   $(DESTDIR)/$(etc_dir)/systemd/system/power-save.service \
-  $(DESTDIR)/$(etc_dir)/rules.d/50-powersave.rules \
+  $(DESTDIR)/$(etc_dir)/udev/rules.d/50-powersave.rules \
   $(DESTDIR)/$(bin_dir)/powersave
 
 define munge
