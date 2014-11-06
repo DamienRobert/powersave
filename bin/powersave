@@ -11,6 +11,24 @@ case $1 in
 esac
 
 #Helper functions {{{1
+
+STATE_FILE="/var/run/powersave/state"
+save_state() {
+	mkdir -p $(dirname $STATE_FILE)
+	if [[ ! -e $STATE_FILE ]]; then
+		{
+			echo "typeset -A bak_vm"
+			for setting in ("laptop_mode" "vm.dirty_writeback_centisecs=500" "vm.dirty_expire_centisecs=3000" "vm.dirty_ratio=20" "vm.dirty_background_ratio=10"); do
+				echo "bak_vm[$setting]=$(sysctl -n "vm.$setting")"
+			done
+		} >  $STATE_FILE
+	fi
+}
+
+load_state() {
+	[[ -r $STATE_FILE ]] && . $STATE_FILE
+}
+
 find_disks() {
 	local disk
 	for disk in /dev/sd?(N) /dev/hd?(N); do
@@ -48,9 +66,9 @@ write_files() {
 }
 
 # Powersave subfunctions {{{1
-handle_modules() { {{{2
+handle_modules() { #{{{2
 	[[ -z $MODULES ]] && MODULES=(btusb)
-	echo "Modules: $MODULES"
+	echo "- Modules: $MODULES"
 	case $mode in
 		performance)
 			#don't fork in case the other functions need the modules
@@ -71,17 +89,17 @@ handle_bus() { #{{{2
 			;;
 		powersave)
 			USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-1}
-			SATA_ALPM=${SATA_ALPM:min_power}
+			SATA_ALPM=${SATA_ALPM:-min_power}
 			;;
 	esac
 	# bus
-	echo "Bus power control: $BUS_POWERCONTROL"
+	echo "- Bus power control: $BUS_POWERCONTROL"
 	write_files $BUS_POWERCONTROL $i /sys/bus/*/devices/*/power/control
 	#scsi
-	echo "Sata ALPM: $SATA_ALPM"
+	echo "- Sata ALPM: $SATA_ALPM"
 	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
 	# usb autosuspend
-	echo "Usb auto suspend: $USB_AUTOSUSPEND"
+	echo "- Usb auto suspend: $USB_AUTOSUSPEND"
 	write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
 }
 
@@ -91,11 +109,11 @@ handle_sysctl() { #{{{2
 		performance)
 			#default arch linux settings
 			SYSCTL_OPTS=(
-				"vm.laptop_mode=0"
-				"vm.dirty_writeback_centisecs=500"
-				"vm.dirty_expire_centisecs=3000"
-				"vm.dirty_ratio=20"
-				"vm.dirty_background_ratio=10"
+				"vm.laptop_mode=${vm[laptop_mode]:-0}"
+				"vm.dirty_writeback_centisecs=${vm[dirty_writeback_centisecs]:-500}"
+				"vm.dirty_expire_centisecs=${vm[dirty_expire_centisecs]:-3000}"
+				"vm.dirty_ratio=${vm[dirty_ratio]:-20}"
+				"vm.dirty_background_ratio=${vm[dirty_background_ratio]:-10}"
 			)
 			;;
 		powersave)
@@ -108,7 +126,7 @@ handle_sysctl() { #{{{2
 			)
 			;;
 	esac
-	echo "sysctl -> $SYSCTL_OPTS"
+	echo "- sysctl:"
 	sysctl -e -w $SYSCTL_OPTS
 }
 
@@ -124,9 +142,9 @@ handle_disks() { #{{{2
 			;;
 	esac
 	# disks
-	echo "hdparm $disks -> $HDPARM_OPTS"
+	echo "- hdparm $disks -> $HDPARM_OPTS"
 	exec hdparm $HDPARM_OPTS $disks &
-	echo "Disks readahead: $DISK_READAHEAD ($disks)"
+	echo "- Disks readahead: $DISK_READAHEAD ($disks)"
 	exec blockdev --setfram $DISK_READAHEAD $disks &
 }
 
@@ -134,33 +152,33 @@ handle_cpu() { #{{{2
 	CPU_GOVERNOR=${CPU_GOVERNOR:-Ondemand}
 	case $mode in
 		performance)
-			CPU_PERFORMANCE_BIAS={CPU_PERFORMANCE_BIAS:-0}
+			CPU_PERFORMANCE_BIAS=${CPU_PERFORMANCE_BIAS:-0}
 			;;
 		powersave)
-			CPU_PERFORMANCE_BIAS={CPU_PERFORMANCE_BIAS:-15}
+			CPU_PERFORMANCE_BIAS=${CPU_PERFORMANCE_BIAS:-15}
 			;;
 	esac
-	echo "Cpu governor: $CPU_GOVERNOR; performance bias: $CPU_PERFORMANCE_BIAS"
+	echo "- Cpu governor: $CPU_GOVERNOR; performance bias: $CPU_PERFORMANCE_BIAS"
 	exec cpupower frequency-set -g $CPU_GOVERNOR &
 	exec cpupower set -b $CPU_PERFORMANCE_BIAS &
 }
 
-handle_netdev{ #{{{2
+handle_netdev() { #{{{2
 	case $mode in
 		performance)
-			WLAN_POWERSAVE=${WLAN_POWERSAVE:-on}
+			WLAN_POWERSAVE=${WLAN_POWERSAVE:-off}
 			ETH_WOL=${ETH_WOL:-g}
 			;;
 		powersave)
-			WLAN_POWERSAVE=${WLAN_POWERSAVE:-off}
+			WLAN_POWERSAVE=${WLAN_POWERSAVE:-on}
 			ETH_WOL=${ETH_WOL:-d}
 			;;
 	esac
-	echo "iw powersave: $WLAN_POWERSAVE ($netdevs_wlan)"
+	echo "- iw powersave: $WLAN_POWERSAVE ($netdevs_wlan)"
 	for wlan in $netdevs_wlan; do
 		exec iw dev $wlan set power_save $WLAN_POWERSAVE &
 	done
-	echo "eth wol: $ETH_WOL ($netdevs_eth)"
+	echo "- eth wol: $ETH_WOL ($netdevs_eth)"
 	for eth in $netdevs_eth; do
 		exec ethtool -s $eth wol $ETH_WOL &
 	done
@@ -186,24 +204,24 @@ get_brightness() { #{{{2
 handle_brightness() {
 	for light in /sys/class/backlight/*; do
 		get_brightness $light $i
-		echo "$(basename $light)/brightness: $BRIGHTNESS"
-		echo $BRIGHTNESS > "$light/brightness"
+		echo "- $(basename $light)/brightness: $BRIGHTNESS"
+		write_files $BRIGHTNESS "$light/brightness"
 	done
 }
 
 handle_screen() { #{{{2
-	echo "set screen dpms"
+	echo "- set screen dpms"
 	case $mode in
 		performance)
-			XSET_DPMS={XSET_DPMS:-"-dpms"}
+			XSET_DPMS=${XSET_DPMS:-"-dpms"}
 			[[ -z $XSET_DPMS_OPTIONS ]] && XSET_DPMS_OPTIONS=(0 0 0)
 			;;
 		powersave)
-			XSET_DPMS={XSET_DPSM:-"+dpms"}
+			XSET_DPMS=${XSET_DPSM:-"+dpms"}
 			[[ -z $XSET_DPMS_OPTIONS ]] && XSET_DPMS_OPTIONS=(0 0 120)
 			;;
 	esac
-	echo "xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS"
+	echo "- xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS"
 	exec xset $XSET_DPMS &
 	exec xset dpms $XSET_DPMS_OPTIONS &
 }
@@ -218,7 +236,7 @@ handle_video() { #{{{2
 			;;
 	esac
 	# pcie
-	echo "PCIE aspm: $PCIE_ASPM"
+	echo "- PCIE aspm: $PCIE_ASPM"
 	write_files $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
 }
 
@@ -233,7 +251,7 @@ handle_sound() { #{{{2
 			;;
 	esac
 	# sound card powersave
-	echo "Sound powersave: $SND_POWERSAVE; Sound controller: $SND_POWERCONTROL"
+	echo "- Sound powersave: $SND_POWERSAVE; Sound controller: $SND_POWERCONTROL"
 	write_files $SND_POWERSAVE /sys/module/snd_*/parameters/power_save
 	write_files $SND_POWERCONTROL /sys/module/snd_*/parameters/power_save_controller
 }
@@ -248,7 +266,7 @@ handle_nmi() { #{{{2
 			;;
 	esac
 	# nmi_watchdog
-	echo "NMI watchdog: $NMI_WATCHDOG"
+	echo "- NMI watchdog: $NMI_WATCHDOG"
 	write_files $NMI_WATCHDOG /proc/sys/kernel/nmi_watchdog
 }
 
@@ -291,10 +309,10 @@ powersave() {
 
 #only run if disks is not defined
 #to have empty disks just set disks=() in pre_vars
-if [[ -z ${disks+defined} ]]
+if [[ -z ${disks+defined} ]]; then
 	find_disks
 fi
-if [[ -z ${netdevs+defined} ]]
+if [[ -z ${netdevs+defined} ]]; then
 	find_netdevs
 fi
 
