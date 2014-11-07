@@ -11,8 +11,8 @@ case $1 in
 esac
 
 #Helper functions {{{1
-. @LIB_DIR@/find_dev
-. @LIB_DIR@/powersave_status
+. @LIB_DIR@/find_dev.zsh
+. @LIB_DIR@/powersave.zsh
 
 STATE_DIR="/var/run/powersave"
 STATE_FILE="$STATE_DIR/state"
@@ -124,7 +124,7 @@ handle_disks() { #{{{2
 			;;
 	esac
 	# disks
-	echo "- hdparm $disks -> $HDPARM_OPTS"
+	echo "- hdparm $HDPARM_OPTS $disks"
 	hdparm $HDPARM_OPTS $disks
 	echo "- Disks readahead: $DISK_READAHEAD ($disks)"
 	blockdev --setfra $DISK_READAHEAD $disks

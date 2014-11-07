@@ -35,10 +35,10 @@ powersave_status() {
 			print_status /sys/class/scsi_host/host*/link_power_management_policy
 			echo "*** MONITOR, CPU, WIRELESS ***"
 			# screen powersave
-			print_status /sys/class/backlight/acpi_video*/brightness
+			print_status /sys/class/backlight/*/brightness
 			cpupower frequency-info -g # cpu
 			for dev in $netdevs_wlan; do
-				echo "$dev power save:"
+				echo "- $dev power save:"
 				iw dev $dev get power_save
 			done
 			;;
