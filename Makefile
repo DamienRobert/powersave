@@ -1,23 +1,24 @@
 pkg_dir=$(prefix)/usr/local/lib/powersave
 bin_dir=$(pkg_dir)/bin
 etc_dir=$(prefix)/etc
+
 rsync=rsync -vcrlp
 
 install_pattern=\
-  etc:$(DESTDIR)/$(etc_dir) \
-  bin:$(DESTDIR)/$(bin_dir)
+  etc:$(DESTDIR)$(etc_dir) \
+  bin:$(DESTDIR)$(bin_dir)
 
 munge_files=\
-  $(DESTDIR)/$(etc_dir)/systemd/system/power-performance.service \
-  $(DESTDIR)/$(etc_dir)/systemd/system/power-save.service \
-  $(DESTDIR)/$(etc_dir)/udev/rules.d/50-powersave.rules \
-  $(DESTDIR)/$(bin_dir)/powersave
+  $(DESTDIR)$(bin_dir)/powersave \
+  $(DESTDIR)$(etc_dir)/systemd/system/power-performance.service \
+  $(DESTDIR)$(etc_dir)/systemd/system/power-save.service \
+  $(DESTDIR)$(etc_dir)/udev/rules.d/50-powersave.rules
 
 define munge
 sed -i \
-  -e 's|@PKG_DIR@|$(pkg_dir)|' \
-  -e 's|@BIN_DIR@|$(bin_dir)|' \
-  -e 's|@ETC_DIR@|$(etc_dir)|' \
+  -e 's|@PKG_DIR@|$(pkg_dir)|g' \
+  -e 's|@BIN_DIR@|$(bin_dir)|g' \
+  -e 's|@ETC_DIR@|$(etc_dir)|g' \
     $(1)
 endef
 
@@ -44,11 +45,11 @@ install:
 	  $(eval in = $(word 1,$(subst :, ,$(inout)))) \
 	  $(eval out = $(word 2,$(subst :, ,$(inout)))) \
 	  $(call install_dir,$(in),$(out));)
-	$(call munge,$(munge_files))
+	$(call munge,$(munge_files);)
 
 uninstall:
 	$(foreach inout,$(install_pattern), \
 	  $(eval in = $(word 1,$(subst :, ,$(inout)))) \
 	  $(eval out = $(word 2,$(subst :, ,$(inout)))) \
 	  $(call uninstall_dir,$(in),$(out));)
-	$(call rm_dirs,$(DESTDIR)/$(bin_dir) $(DESTDIR)/$(etc_dir) $(DESTDIR)/$(pkg_dir))
+	$(call rm_dirs,$(DESTDIR)$(bin_dir) $(DESTDIR)$(etc_dir) $(DESTDIR)$(pkg_dir))
