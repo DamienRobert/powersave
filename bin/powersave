@@ -13,21 +13,27 @@ esac
 #Helper functions {{{1
 . @LIB_DIR@/find_dev
 
-STATE_FILE="/var/run/powersave/state"
+STATE_DIR="/var/run/powersave"
+STATE_FILE="$STATE_DIR/state"
 save_state() {
-	mkdir -p $(dirname $STATE_FILE)
-	if [[ ! -e $STATE_FILE ]]; then
-		{
-			echo "typeset -A bak_vm"
-			for setting in ("laptop_mode" "vm.dirty_writeback_centisecs=500" "vm.dirty_expire_centisecs=3000" "vm.dirty_ratio=20" "vm.dirty_background_ratio=10"); do
-				echo "bak_vm[$setting]=$(sysctl -n "vm.$setting")"
-			done
-		} >  $STATE_FILE
-	fi
+	mkdir -p $STATE_DIR
+	{
+		echo "typeset -A init_vm"
+		for setting in ("laptop_mode" "dirty_writeback_centisecs" "dirty_expire_centisecs" "dirty_ratio" "dirty_background_ratio"); do
+			echo "init_vm[$setting]=$(sysctl -n "vm.$setting")"
+		done
+	} >  $STATE_FILE
+	powersave_status > $STATE_DIR/init_powersave_status
 }
-
 load_state() {
 	[[ -r $STATE_FILE ]] && . $STATE_FILE
+}
+save_or_load_state() {
+	if [[ ! -e $STATE_FILE ]]; then
+		save_state
+	else
+		load_state
+	fi
 }
 
 write_files() {
@@ -84,11 +90,11 @@ handle_sysctl() { #{{{2
 		performance)
 			#default arch linux settings
 			SYSCTL_OPTS=(
-				"vm.laptop_mode=${vm[laptop_mode]:-0}"
-				"vm.dirty_writeback_centisecs=${vm[dirty_writeback_centisecs]:-500}"
-				"vm.dirty_expire_centisecs=${vm[dirty_expire_centisecs]:-3000}"
-				"vm.dirty_ratio=${vm[dirty_ratio]:-20}"
-				"vm.dirty_background_ratio=${vm[dirty_background_ratio]:-10}"
+				"vm.laptop_mode=${init_vm[laptop_mode]:-0}"
+				"vm.dirty_writeback_centisecs=${init_vm[dirty_writeback_centisecs]:-500}"
+				"vm.dirty_expire_centisecs=${init_vm[dirty_expire_centisecs]:-3000}"
+				"vm.dirty_ratio=${init_vm[dirty_ratio]:-20}"
+				"vm.dirty_background_ratio=${init_vm[dirty_background_ratio]:-10}"
 			)
 			;;
 		powersave)
@@ -291,6 +297,7 @@ if [[ -z ${netdevs+defined} ]]; then
 	find_netdevs
 fi
 
+save_or_load_state
 powersave $@
 
 exit 0

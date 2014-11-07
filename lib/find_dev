@@ -1,4 +1,5 @@
 # vim: ft=zsh
+
 find_disks() {
 	local filter disk args mode
 	while true;
