@@ -47,6 +47,7 @@ powersave_status() {
 
 #return $brightness setting to apply to backlight
 #and $cur_brightness
+#apply_brightness can be a math expression like '$max_brightness/3'
 get_brightness() { #{{{2
 	local backlight max_brightness apply_brigthness change_mode
 	while true;
@@ -61,11 +62,12 @@ get_brightness() { #{{{2
 	apply_brightness=$1; shift
 	backlight=$1;
 	brightness=
+	[[ -w $backlight/brightness ]] || return 1
 	max_brightness=9
-	[[ -r "$video/max_brightness" ]] && max_brightness=$(cat "$video/max_brightness")
-	[[ -r "$video/brightness" ]] && cur_brightness=$(cat "$video/brightness")
-	[[ -r "$video/actual_brightness" ]] && cur_brightness=$(cat "$video/actual_brightness")
-	brightness=$(eval $apply_brigthness)
+	[[ -r "$backlight/max_brightness" ]] && max_brightness=$(cat "$backlight/max_brightness")
+	[[ -r "$backlight/brightness" ]] && cur_brightness=$(cat "$backlight/brightness")
+	[[ -r "$backlight/actual_brightness" ]] && cur_brightness=$(cat "$backlight/actual_brightness")
+	eval "(( brightness = $apply_brightness ))"
 	case $change_mode in
 		increase)
 			[[ -n $cur_brightness && $cur_brightness -gt $brightness ]] && brightness=

@@ -170,9 +170,9 @@ handle_brightness() { #{{{2
 	for light in /sys/class/backlight/*; do
 		case $mode in
 			performance)
-				get_brightness --increase $light ;;
+				get_brightness --increase '$max_brightness' $light ;;
 			powersave)
-				get_brightness --decrease $light ;;
+				get_brightness --decrease '$max_brightness/3' $light ;;
 		esac
 		echo "- $(basename $light)/brightness: $brightness ($cur_brightness)"
 		[[ -n $brightness ]] && write_files $BRIGHTNESS "$light/brightness"
