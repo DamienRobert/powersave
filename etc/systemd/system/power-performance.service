@@ -1,5 +1,6 @@
 [Unit]
-Description=Performance mode (global)
+Description=Power performance mode (global service)
+PartOf=power-performance.target
 
 [Service]
 Type=oneshot
