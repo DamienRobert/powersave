@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/zsh
 # vim: fdm=marker
 
 case $1 in
@@ -166,28 +166,16 @@ handle_netdev() { #{{{2
 	done
 }
 
-get_brightness() { #{{{2
-	video=$1
-	MAX_BRIGHTNESS=9
-	[[ -r "$video/max_brightness" ]] && MAX_BRIGHTNESS=$(cat "$video/max_brightness")
-	[[ -r "$video/brightness" ]] && CUR_BRIGHTNESS=$(cat "$video/brightness")
-	case $mode in
-		performance)
-			BRIGHTNESS=$MAX_BRIGHTNESS
-			[[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -gt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
-		;;
-		powersave)
-			BRIGHTNESS=$(($MAX_BRIGHTNESS/3))
-			[[ -n $CUR_BRIGHTNESS && $CUR_BRIGHTNESS -lt $BRIGHTNESS ]] && BRIGHTNESS=$CUR_BRIGHTNESS
-		;;
-	esac
-}
-
-handle_brightness() {
+handle_brightness() { #{{{2
 	for light in /sys/class/backlight/*; do
-		get_brightness $light
-		echo "- $(basename $light)/brightness: $BRIGHTNESS"
-		write_files $BRIGHTNESS "$light/brightness"
+		case $mode in
+			performance)
+				get_brightness --increase $light ;;
+			powersave)
+				get_brightness --decrease $light ;;
+		esac
+		echo "- $(basename $light)/brightness: $brightness ($cur_brightness)"
+		[[ -n $brightness ]] && write_files $BRIGHTNESS "$light/brightness"
 	done
 }
 

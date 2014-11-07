@@ -45,3 +45,33 @@ powersave_status() {
 	esac
 }
 
+#return $brightness setting to apply to backlight
+#and $cur_brightness
+get_brightness() { #{{{2
+	local backlight max_brightness apply_brigthness change_mode
+	while true;
+	do
+		case $1 in
+			-- ) break ;;
+			--increase ) shift; change_mode="increase" ;; #only increase brightness
+			--decrease ) shift; change_mode="decrease" ;;
+			*) break;;
+		esac
+	done
+	apply_brightness=$1; shift
+	backlight=$1;
+	brightness=
+	max_brightness=9
+	[[ -r "$video/max_brightness" ]] && max_brightness=$(cat "$video/max_brightness")
+	[[ -r "$video/brightness" ]] && cur_brightness=$(cat "$video/brightness")
+	[[ -r "$video/actual_brightness" ]] && cur_brightness=$(cat "$video/actual_brightness")
+	brightness=$(eval $apply_brigthness)
+	case $change_mode in
+		increase)
+			[[ -n $cur_brightness && $cur_brightness -gt $brightness ]] && brightness=
+		;;
+		decrase)
+			[[ -n $cur_brightness && $cur_brightness -lt $brightness ]] && brightness=
+		;;
+	esac
+}
