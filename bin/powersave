@@ -12,6 +12,7 @@ esac
 
 #Helper functions {{{1
 . @LIB_DIR@/find_dev
+. @LIB_DIR@/powersave_status
 
 STATE_DIR="/var/run/powersave"
 STATE_FILE="$STATE_DIR/state"

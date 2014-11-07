@@ -31,15 +31,13 @@ powersave_status() {
 			# kernel write mode
 			sysctl vm.laptop_mode vm.dirty_writeback_centisecs vm.dirty_expire_centisecs vm.dirty_ratio vm.dirty_background_ratio
 			echo "*** DISK POWERSAVE ***"
-			for disk in $disks; do
-				sudo hdparm -B $disk;
-			done
+			sudo hdparm -B $disks
 			print_status /sys/class/scsi_host/host*/link_power_management_policy
 			echo "*** MONITOR, CPU, WIRELESS ***"
 			# screen powersave
 			print_status /sys/class/backlight/acpi_video*/brightness
 			cpupower frequency-info -g # cpu
-			for dev in $netdev_wlan; do
+			for dev in $netdevs_wlan; do
 				echo "$dev power save:"
 				iw dev $dev get power_save
 			done
