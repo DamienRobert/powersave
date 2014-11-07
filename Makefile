@@ -1,12 +1,14 @@
 pkg_dir=$(prefix)/usr/local/lib/powersave
 bin_dir=$(pkg_dir)/bin
+lib_dir=$(pkg_dir)/lib
 etc_dir=$(prefix)/etc
 
 rsync=rsync -vcrlp
 
 install_pattern=\
   etc:$(DESTDIR)$(etc_dir) \
-  bin:$(DESTDIR)$(bin_dir)
+  bin:$(DESTDIR)$(bin_dir) \
+  lib:$(DESTDIR)$(lib_dir)
 
 munge_files=\
   $(DESTDIR)$(bin_dir)/powersave \
@@ -18,6 +20,7 @@ define munge
 sed -i \
   -e 's|@PKG_DIR@|$(pkg_dir)|g' \
   -e 's|@BIN_DIR@|$(bin_dir)|g' \
+  -e 's|@LIB_DIR@|$(lib_dir)|g' \
   -e 's|@ETC_DIR@|$(etc_dir)|g' \
     $(1)
 endef

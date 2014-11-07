@@ -11,6 +11,7 @@ case $1 in
 esac
 
 #Helper functions {{{1
+. @LIB_DIR@/find_dev
 
 STATE_FILE="/var/run/powersave/state"
 save_state() {
@@ -27,32 +28,6 @@ save_state() {
 
 load_state() {
 	[[ -r $STATE_FILE ]] && . $STATE_FILE
-}
-
-find_disks() {
-	local disk
-	for disk in /dev/sd?(N) /dev/hd?(N); do
-		if udevadm info -q all -n $disk | egrep 'ID_BUS=(ata|scsi|ide)' >/dev/null; then
-			disks+=($disk)
-		fi
-	done
-}
-
-find_netdevs() {
-	local dev sysdir args
-	sysdir="/sys/class/net"
-	args=()
-	for dev in $sysdir/*(N); do
-		args+=$(basename $dev)
-	done
-	netdevs=()
-	netdevs_eth=()
-	netdevs_wlan=()
-	for dev in $args; do
-		netdevs+=($dev)
-		[[ -e $sysdir/$dev/device ]] && [[ ! -e $sysdir/$dev/wireless ]] && netdevs_eth+=($dev)
-		[[ -e $sysdir/$dev/wireless ]] && netdevs_wlan+=($dev)
-	done
 }
 
 write_files() {
@@ -310,7 +285,7 @@ powersave() {
 #only run if disks is not defined
 #to have empty disks just set disks=() in pre_vars
 if [[ -z ${disks+defined} ]]; then
-	find_disks
+	find_disks --sata
 fi
 if [[ -z ${netdevs+defined} ]]; then
 	find_netdevs
