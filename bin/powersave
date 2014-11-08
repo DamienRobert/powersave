@@ -200,6 +200,7 @@ handle_brightness() { #{{{2
 }
 
 handle_screen() { #{{{2
+	local disp
 	echo "- set screen dpms"
 	case $mode in
 		performance)
@@ -211,9 +212,11 @@ handle_screen() { #{{{2
 			[[ -z $XSET_DPMS_OPTIONS ]] && XSET_DPMS_OPTIONS=(0 0 120)
 			;;
 	esac
-	echo "- xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS"
-	xset $XSET_DPMS
-	xset dpms $XSET_DPMS_OPTIONS
+	echo "- xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS [displays: $displays]"
+	for disp in $displays;
+		DISPLAY=$disp xset $XSET_DPMS
+		DISPLAY=$disp xset dpms $XSET_DPMS_OPTIONS
+	done
 }
 
 handle_video() { #{{{2
@@ -331,6 +334,9 @@ if [[ -z ${netdevs+defined} ]]; then
 fi
 if [[ -z ${backlights+defined} ]]; then
 	find_backlights
+fi
+if [[ -z ${displays+defined} ]]; then
+	find_displays
 fi
 
 save_and_load_state
