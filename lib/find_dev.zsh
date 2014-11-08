@@ -57,7 +57,7 @@ find_displays() {
 	local x
 	displays=()
 	for x in /tmp/.X11-unix/X*; do
-		displays+=${$(basename $x)#X}
+		displays+=":${$(basename $x)#X}"
 	done
 }
 

@@ -1,6 +1,11 @@
 # vim: ft=zsh
 
 powersave_status() {
+	print_status() {
+		for file in $@; do
+			[[ -r $file ]] && echo "$file: $(cat $file)"
+		done
+	}
 	case $1 in
 		usb)
 			#-power/control: on means no suspend, auto mean autosuspend, suspend mean suspend now.
@@ -13,11 +18,6 @@ powersave_status() {
 			done
 			;;
 		*)
-			print_status() {
-				for file in $@; do
-					echo "$file: $(cat $file)" 
-				done
-			}
 			echo "*** DEVICES POWER CONTROL ***"
 			print_status /sys/bus/*/devices/*/power/control
 			echo "*** USB POWER AUTOSUSPEND ***"
@@ -51,7 +51,7 @@ powersave_status() {
 #and $cur_brightness
 #apply_brightness can be a math expression like '$max_brightness/3'
 get_brightness() { #{{{2
-	local backlight max_brightness apply_brigthness change_mode
+	local backlight max_brightness apply_brightness change_mode
 	while true;
 	do
 		case $1 in

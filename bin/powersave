@@ -1,4 +1,4 @@
-#!/usr/bin/zsh
+#!/usr/bin/env zsh
 # vim: fdm=marker
 
 case $1 in
@@ -11,8 +11,8 @@ case $1 in
 esac
 
 #Helper functions {{{1
-. @LIB_DIR@/find_dev.zsh
-. @LIB_DIR@/powersave.zsh
+. "@LIB_DIR@/find_dev.zsh"
+. "@LIB_DIR@/powersave.zsh"
 
 STATE_DIR="/var/run/powersave"
 STATE_FILE="$STATE_DIR/state"
@@ -53,6 +53,7 @@ save_and_load_state() {
 }
 
 write_files() {
+	local file value
 	value=$1
 	if [[ -n $value ]]; then
 		shift
@@ -194,7 +195,7 @@ handle_brightness() { #{{{2
 			powersave)
 				get_brightness --decrease '$max_brightness/3' $light ;;
 		esac
-		echo "- $(basename $light)/brightness: $brightness ($cur_brightness)"
+		echo "-> $(basename $light)/brightness: $brightness ($cur_brightness)"
 		[[ -n $brightness ]] && write_files $brightness "$light/brightness"
 	done
 }
@@ -212,8 +213,8 @@ handle_screen() { #{{{2
 			[[ -z $XSET_DPMS_OPTIONS ]] && XSET_DPMS_OPTIONS=(0 0 120)
 			;;
 	esac
-	echo "- xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS [displays: $displays]"
-	for disp in $displays;
+	echo "-> xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS [displays: $displays]"
+	for disp in $displays; do
 		DISPLAY=$disp xset $XSET_DPMS
 		DISPLAY=$disp xset dpms $XSET_DPMS_OPTIONS
 	done
