@@ -19,9 +19,9 @@ STATE_FILE="$STATE_DIR/state"
 do_save_state() {
 	mkdir -p $STATE_DIR
 	{
-		local sysdir
+		local sysdir setting
 		echo "typeset -A init_vm"
-		for setting in ("laptop_mode" "dirty_writeback_centisecs" "dirty_expire_centisecs" "dirty_ratio" "dirty_background_ratio"); do
+		for setting in "laptop_mode" "dirty_writeback_centisecs" "dirty_expire_centisecs" "dirty_ratio" "dirty_background_ratio"; do
 			echo "init_vm[$setting]=$(sysctl -n "vm.$setting")"
 		done
 		sysdir="/sys/modules/i915/parameters"
