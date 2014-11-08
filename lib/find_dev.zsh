@@ -50,13 +50,13 @@ find_netdevs() {
 }
 
 find_backlights() {
-	backlights=(/sys/class/backlight/*)
+	backlights=(/sys/class/backlight/*(N))
 }
 
 find_displays() {
 	local x
 	displays=()
-	for x in /tmp/.X11-unix/X*; do
+	for x in /tmp/.X11-unix/X*(N); do
 		displays+=":${$(basename $x)#X}"
 	done
 }
