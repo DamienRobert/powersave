@@ -90,7 +90,7 @@ handle_bus() { #{{{2
 	esac
 	# bus
 	echo "- Bus power control: $BUS_POWERCONTROL"
-	write_files $BUS_POWERCONTROL $i /sys/bus/*/devices/*/power/control
+	write_files $BUS_POWERCONTROL /sys/bus/*/devices/*/power/control
 	#scsi
 	echo "- Sata ALPM: $SATA_ALPM"
 	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
