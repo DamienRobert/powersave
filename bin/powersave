@@ -46,6 +46,7 @@ load_state() {
 }
 save_and_load_state() {
 	if [[ ! -e $STATE_FILE ]]; then
+		first_call=t
 		save_state
 	fi
 	load_state
@@ -277,7 +278,14 @@ handle_nmi() { #{{{2
 }
 
 # Global powersave function {{{1
+test_firstcall() {
+	if [[ -n $first_call && $mode==performance ]]; then
+		echo "First call (performance): do nothing"
+		exit 0
+	fi
+}
 do_powersave() {
+	test_firstcall
 	case $mode in
 		performance)
 			handle_modules #at beginning
