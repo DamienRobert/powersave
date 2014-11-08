@@ -42,7 +42,7 @@ write_files() {
 	if [[ -n $value ]]; then
 		shift
 		for file in $@; do
-			[[ -w $file ]] && echo $value > $file
+			[[ -w $file ]] && echo -n $value > $file
 		done
 	fi
 }
