@@ -49,6 +49,10 @@ find_netdevs() {
 	done
 }
 
+find_backlights() {
+	backlights=(/sys/class/backlight/*)
+}
+
 find_labels() {
 	local dev
 	labels=()

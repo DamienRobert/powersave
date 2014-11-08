@@ -184,7 +184,9 @@ handle_netdev() { #{{{2
 }
 
 handle_brightness() { #{{{2
-	for light in /sys/class/backlight/*; do
+	local light
+	echo "- backlights: $backlights"
+	for light in $backlights; do
 		case $mode in
 			performance)
 				get_brightness --increase '$max_brightness' $light ;;
@@ -192,7 +194,7 @@ handle_brightness() { #{{{2
 				get_brightness --decrease '$max_brightness/3' $light ;;
 		esac
 		echo "- $(basename $light)/brightness: $brightness ($cur_brightness)"
-		[[ -n $brightness ]] && write_files $BRIGHTNESS "$light/brightness"
+		[[ -n $brightness ]] && write_files $brightness "$light/brightness"
 	done
 }
 
@@ -318,6 +320,9 @@ if [[ -z ${disks+defined} ]]; then
 fi
 if [[ -z ${netdevs+defined} ]]; then
 	find_netdevs
+fi
+if [[ -z ${backlights+defined} ]]; then
+	find_backlights
 fi
 
 save_and_load_state
