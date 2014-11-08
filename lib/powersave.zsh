@@ -62,7 +62,7 @@ get_brightness() { #{{{2
 	apply_brightness=$1; shift
 	backlight=$1;
 	brightness=
-	[[ -w $backlight/brightness ]] || return 1
+	[[ -e $backlight/brightness ]] || return 1
 	max_brightness=9
 	[[ -r "$backlight/max_brightness" ]] && max_brightness=$(cat "$backlight/max_brightness")
 	[[ -r "$backlight/brightness" ]] && cur_brightness=$(cat "$backlight/brightness")
