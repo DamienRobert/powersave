@@ -16,25 +16,35 @@ esac
 
 STATE_DIR="/var/run/powersave"
 STATE_FILE="$STATE_DIR/state"
-save_state() {
+do_save_state() {
 	mkdir -p $STATE_DIR
 	{
+		local sysdir
 		echo "typeset -A init_vm"
 		for setting in ("laptop_mode" "dirty_writeback_centisecs" "dirty_expire_centisecs" "dirty_ratio" "dirty_background_ratio"); do
 			echo "init_vm[$setting]=$(sysctl -n "vm.$setting")"
 		done
+		sysdir="/sys/modules/i915/parameters"
+		if [[ -d $sysdir ]]; then
+			echo "INIT_VIDEO_POWERSAVE=$(cat $sysdir/powersave)"
+			echo "INIT_I915_ENABLE_RC6=$(cat $sysdir/enable_rc6)"
+			echo "INIT_I915_ENABLE_FBC=$(cat $sysdir/enable_fbc)"
+			echo "INIT_I915_LVDS_DOWNCLOCK=$(cat $sysdir/lvds_downclock)"
+		fi
 	} >  $STATE_FILE
 	powersave_status > $STATE_DIR/init_powersave_status
+}
+save_state() {
+	do_save_state $@
 }
 load_state() {
 	[[ -r $STATE_FILE ]] && . $STATE_FILE
 }
-save_or_load_state() {
+save_and_load_state() {
 	if [[ ! -e $STATE_FILE ]]; then
 		save_state
-	else
-		load_state
 	fi
+	load_state
 }
 
 write_files() {
@@ -90,6 +100,7 @@ handle_sysctl() { #{{{2
 	case $mode in
 		performance)
 			#default arch linux settings
+			[[ -z $SYSCTL_OPTS ]] &&
 			SYSCTL_OPTS=(
 				"vm.laptop_mode=${init_vm[laptop_mode]:-0}"
 				"vm.dirty_writeback_centisecs=${init_vm[dirty_writeback_centisecs]:-500}"
@@ -99,6 +110,7 @@ handle_sysctl() { #{{{2
 			)
 			;;
 		powersave)
+			[[ -z $SYSCTL_OPTS ]] &&
 			SYSCTL_OPTS=(
 				"vm.laptop_mode=5"
 				"vm.dirty_writeback_centisecs=60000"
@@ -200,14 +212,31 @@ handle_video() { #{{{2
 	case $mode in
 		performance)
 			PCIE_ASPM=${PCIE_ASPM:-default}
+			VIDEO_POWERSAVE=${VIDEO_POWERSAVE:-${INIT_VIDEO_POWERSAVE:-1}}
+			I915_ENABLE_RC6=${INIT_I915_ENABLE_RC6:-${INIT_I915_ENABLE_RC6:-'-1'}}
+			I915_ENABLE_FBC=${I915_ENABLE_FBC:-${INIT_I915_ENABLE_FBC:-'-1'}}
+			I915_LVDS_DOWNCLOCK=${I915_LVDS_DOWNCLOCK:-${INIT_I915_LVDS_DOWNCLOCK:-0}}
 			;;
 		powersave)
 			PCIE_ASPM=${PCIE_ASPM:-powersave}
+			VIDEO_POWERSAVE=${VIDEO_POWERSAVE:-1}
+			I915_ENABLE_RC6=${I915_ENABLE_RC6:-3}
+			I915_ENABLE_FBC=${I915_ENABLE_FBC:-1}
+			I915_LVDS_DOWNCLOCK=${I915_LVDS_DOWNCLOCK:-1}
 			;;
 	esac
 	# pcie
 	echo "- PCIE aspm: $PCIE_ASPM"
 	write_files $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
+	local sysdir
+	sysdir="/sys/modules/i915/parameters"
+	if [[ -d $sysdir ]]; then
+		echo "- i915 -> powersave: $VIDEO_POWERSAVE; rc6: $I915_ENABLE_RC6; fbc: $I915_ENABLE_FBC; lvds_downclock: $I915_LVDS_DOWNCLOCK"
+		write_files $VIDEO_POWERSAVE $sysdir/powersave
+		write_files $I915_ENABLE_RC6 $sysdir/enable_rc6
+		write_files $I915_ENABLE_FBC $sysdir/enable_fbc
+		write_files $I915_LVDS_DOWNCLOCK $sysdir/lvds_downclock
+	fi
 }
 
 handle_sound() { #{{{2
@@ -286,7 +315,7 @@ if [[ -z ${netdevs+defined} ]]; then
 	find_netdevs
 fi
 
-save_or_load_state
+save_and_load_state
 powersave $@
 
 exit 0
