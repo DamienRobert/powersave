@@ -31,6 +31,10 @@ do_save_state() {
 			echo "INIT_I915_ENABLE_FBC=$(cat $sysdir/enable_fbc)"
 			echo "INIT_I915_LVDS_DOWNCLOCK=$(cat $sysdir/lvds_downclock)"
 		fi
+		sysdir="/sys/devices/system/cpu/cpu0/cpufreq"
+		if [[ -d $sysdir ]]; then
+			echo "INIT_CPU_GOVERNOR=$(cat $sysdir/scaling_governor)"
+		fi
 	} >  $STATE_FILE
 	powersave_status > $STATE_DIR/init_powersave_status
 }
@@ -143,7 +147,8 @@ handle_disks() { #{{{2
 }
 
 handle_cpu() { #{{{2
-	CPU_GOVERNOR=${CPU_GOVERNOR:-Ondemand}
+	#newer cpus are on powersave by default, older on Ondemand
+	CPU_GOVERNOR=${CPU_GOVERNOR:-${INIT_CPU_GOVERNOR:-Ondemand}}
 	case $mode in
 		performance)
 			CPU_PERFORMANCE_BIAS=${CPU_PERFORMANCE_BIAS:-0}
