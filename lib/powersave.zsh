@@ -24,9 +24,11 @@ powersave_status() {
 			print_status /sys/bus/usb/devices/*/power/autosuspend
 			echo "*** MISC ***"
 			print_status /proc/sys/kernel/nmi_watchdog
-			print_status /sys/module/pcie_aspm/parameters/policy
 			echo "*** SOUND ***"
 			print_status /sys/module/snd_*/parameters/power_save /sys/module/snd_*/parameters/power_save_controller
+			echo "*** VIDEO ***"
+			print_status /sys/module/pcie_aspm/parameters/policy
+			print_status /sys/module/i915/parameters/{powersave,enable_rc6,enable_fbc,lvds_downclock}
 			echo "*** KERNEL WRITE MODE ***"
 			# kernel write mode
 			sysctl vm.laptop_mode vm.dirty_writeback_centisecs vm.dirty_expire_centisecs vm.dirty_ratio vm.dirty_background_ratio

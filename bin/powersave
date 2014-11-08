@@ -24,7 +24,7 @@ do_save_state() {
 		for setting in "laptop_mode" "dirty_writeback_centisecs" "dirty_expire_centisecs" "dirty_ratio" "dirty_background_ratio"; do
 			echo "init_vm[$setting]=$(sysctl -n "vm.$setting")"
 		done
-		sysdir="/sys/modules/i915/parameters"
+		sysdir="/sys/module/i915/parameters"
 		if [[ -d $sysdir ]]; then
 			echo "INIT_VIDEO_POWERSAVE=$(cat $sysdir/powersave)"
 			echo "INIT_I915_ENABLE_RC6=$(cat $sysdir/enable_rc6)"
@@ -234,7 +234,7 @@ handle_video() { #{{{2
 	echo "- PCIE aspm: $PCIE_ASPM"
 	write_files $PCIE_ASPM /sys/module/pcie_aspm/parameters/policy
 	local sysdir
-	sysdir="/sys/modules/i915/parameters"
+	sysdir="/sys/module/i915/parameters"
 	if [[ -d $sysdir ]]; then
 		echo "- i915 -> powersave: $VIDEO_POWERSAVE; rc6: $I915_ENABLE_RC6; fbc: $I915_ENABLE_FBC; lvds_downclock: $I915_LVDS_DOWNCLOCK"
 		write_files $VIDEO_POWERSAVE $sysdir/powersave
