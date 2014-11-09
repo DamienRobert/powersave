@@ -48,7 +48,7 @@ Further settings:
 - add (-a 2048) to HDPARM_OPTS to augment readahead
  (or use blockdev --setfra $readahead $disks)
  [default readahead on power is 256]
-- Use mount -o remount,commit=600 / &> /dev/null to increase the interval of periodic commit? [30 seconds by default; only for ext[34] fs]
+- Use mount -o remount,commit=600 / &> /dev/null to increase the interval of periodic commit? [30 seconds by default; works for ext[34] fs and btrfs]
 For instance from https://github.com/intelfx/power-management
 function handle_filesystems() {
   while read DEV MOUNT FSTYPE REST; do

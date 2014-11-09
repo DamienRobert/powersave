@@ -283,7 +283,7 @@ handle_nmi() { #{{{2
 
 # Global powersave function {{{1
 test_firstcall() {
-	if [[ -n $first_call && $mode==performance ]]; then
+	if [[ -n $first_call && $mode == "performance" ]]; then
 		echo "First call (performance): do nothing"
 		exit 0
 	fi
