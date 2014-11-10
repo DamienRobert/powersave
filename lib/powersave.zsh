@@ -74,7 +74,7 @@ get_brightness() { #{{{2
 		increase)
 			[[ -n $cur_brightness && $cur_brightness -gt $brightness ]] && brightness=
 		;;
-		decrase)
+		decrease)
 			[[ -n $cur_brightness && $cur_brightness -lt $brightness ]] && brightness=
 		;;
 	esac
