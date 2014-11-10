@@ -61,21 +61,27 @@ get_brightness() { #{{{2
 			*) break;;
 		esac
 	done
-	apply_brightness=$1; shift
-	backlight=$1;
+	if [[ $# -ge 2 ]]; then
+		apply_brightness=$1
+		backlight=$2
+	else
+		backlight=$1
+	fi
 	brightness=
 	[[ -e $backlight/brightness ]] || return 1
 	max_brightness=9
 	[[ -r "$backlight/max_brightness" ]] && max_brightness=$(cat "$backlight/max_brightness")
 	[[ -r "$backlight/brightness" ]] && cur_brightness=$(cat "$backlight/brightness")
 	[[ -r "$backlight/actual_brightness" ]] && cur_brightness=$(cat "$backlight/actual_brightness")
-	eval "(( brightness = $apply_brightness ))"
-	case $change_mode in
-		increase)
-			[[ -n $cur_brightness && $cur_brightness -gt $brightness ]] && brightness=
-		;;
-		decrease)
-			[[ -n $cur_brightness && $cur_brightness -lt $brightness ]] && brightness=
-		;;
-	esac
+	if [[ -n $apply_brightness ]]; then
+		eval "(( brightness = $apply_brightness ))"
+		case $change_mode in
+			increase)
+				[[ -n $cur_brightness && $cur_brightness -gt $brightness ]] && brightness=
+			;;
+			decrease)
+				[[ -n $cur_brightness && $cur_brightness -lt $brightness ]] && brightness=
+			;;
+		esac
+	fi
 }
