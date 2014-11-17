@@ -36,7 +36,6 @@ do_save_state() {
 			echo "INIT_CPU_GOVERNOR=$(cat $sysdir/scaling_governor)"
 		fi
 	} >  $STATE_FILE
-	powersave_status > $STATE_DIR/init_powersave_status
 }
 save_state() {
 	do_save_state $@
@@ -44,10 +43,14 @@ save_state() {
 load_state() {
 	[[ -r $STATE_FILE ]] && . $STATE_FILE
 }
+status() {
+	powersave_status > $STATE_DIR/init_powersave_status
+}
 save_and_load_state() {
 	if [[ ! -e $STATE_FILE ]]; then
 		first_call=t
 		save_state
+		status
 	fi
 	load_state
 }
