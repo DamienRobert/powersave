@@ -304,7 +304,7 @@ do_powersave() {
 	handle_cpu
 	handle_netdev
 	handle_brightness
-	#handle_screen
+	handle_screen
 	handle_video
 	handle_sound
 	handle_nmi
