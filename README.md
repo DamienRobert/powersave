@@ -1,3 +1,5 @@
+# Powersave
+
 This is a fork of <https://github.com/Unia/Powersave> which was based on the
 thread from <http://crunchbanglinux.org/forums/topic/11954>.
 
@@ -10,3 +12,9 @@ For a version integrated closely with systemd, see
 To put everything into udev rules (so that the powersave config is always
 enabled), see <https://github.com/vodik/powersave/> or the `edge` branch of
 <https://github.com/Unia/Powersave>.
+
+## Copyright
+
+Copyright © 2014 Damien Robert
+
+MIT License. See {file:COPYING} for more details.
