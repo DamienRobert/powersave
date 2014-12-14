@@ -168,13 +168,12 @@ handle_cpu() { #{{{2
 }
 
 handle_netdev() { #{{{2
+	WLAN_POWERSAVE=${WLAN_POWERSAVE:-on}
 	case $mode in
 		performance)
-			WLAN_POWERSAVE=${WLAN_POWERSAVE:-off}
 			ETH_WOL=${ETH_WOL:-g}
 			;;
 		powersave)
-			WLAN_POWERSAVE=${WLAN_POWERSAVE:-on}
 			ETH_WOL=${ETH_WOL:-d}
 			;;
 	esac
