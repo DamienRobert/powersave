@@ -286,10 +286,13 @@ handle_nmi() { #{{{2
 # Global powersave function {{{1
 test_firstcall() {
 	if [[ -n $first_call && $mode == "performance" ]]; then
-		echo "First call (performance): only handle brightness"
-		handle_brightness
+		echo "First call (performance)"
+		do_powerperformance_firsttime
 		exit 0
 	fi
+}
+do_powerperformance_firsttime() {
+	handle_brightness
 }
 do_powersave() {
 	test_firstcall
