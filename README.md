@@ -12,6 +12,7 @@ For a version integrated closely with systemd, see
 To put everything into udev rules (so that the powersave config is always
 enabled), see <https://github.com/vodik/powersave/> or the `edge` branch of
 <https://github.com/Unia/Powersave>.
+See also the directory `doc/ex-etc`.
 
 ## Copyright
 
