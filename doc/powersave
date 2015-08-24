@@ -1,3 +1,6 @@
+Wifi:
+  iwconfig wlan0 txpower on
+
 Buses:
 - power/control:
     'auto' means device can be suspended

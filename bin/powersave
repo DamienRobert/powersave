@@ -283,6 +283,11 @@ handle_nmi() { #{{{2
 	write_files $NMI_WATCHDOG /proc/sys/kernel/nmi_watchdog
 }
 
+restore_pci_control() { #{{{2
+	#Only restore the on status for pci devices
+	for i in /sys/bus/pci/devices/*/power/control; do echo on > $i; done
+}
+
 # Global powersave function {{{1
 test_firstcall() {
 	if [[ -n $first_call && $mode == "performance" ]]; then
@@ -313,9 +318,7 @@ do_powersave() {
 	handle_nmi
 	case $mode in
 		performance)
-			#Only restore the on status for pci devices
-			for i in /sys/bus/pci/devices/*/power/control; do echo on > $i; done
-			#iwconfig wlan0 txpower on
+			restore_pci_control
 			;;
 		powersave)
 			handle_modules #at end
