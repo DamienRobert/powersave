@@ -5,6 +5,7 @@ PartOf=power-save.target
 [Service]
 Type=oneshot
 RemainAfterExit=true
+ExecStartPre=-/usr/bin/sleep 10
 ExecStart=@BIN_DIR@/powersave true
 
 [Install]
