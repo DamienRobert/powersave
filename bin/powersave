@@ -68,7 +68,7 @@ write_files() {
 
 # Powersave subfunctions {{{1
 handle_modules() { #{{{2
-	[[ -z $MODULES ]] && MODULES=(btusb)
+	[[ -z $MODULES ]] && MODULES=()
 	echo "- Modules: $MODULES"
 	case $mode in
 		performance)
