@@ -68,17 +68,18 @@ write_files() {
 
 # Powersave subfunctions {{{1
 handle_modules() { #{{{2
-	[[ -z $MODULES ]] && MODULES=()
-	echo "- Modules: $MODULES"
-	case $mode in
-		performance)
-			#don't fork in case the other functions need the modules
-			modprobe $MODULES
-			;;
-		powersave)
-			modprobe -r $MODULES
-			;;
-	esac
+	if [[ -n $MODULES ]]; then
+		echo "- Modules: $MODULES"
+		case $mode in
+			performance)
+				#don't fork in case the other functions need the modules
+				modprobe $MODULES
+				;;
+			powersave)
+				modprobe -r $MODULES
+				;;
+		esac
+	fi
 }
 
 handle_bus() { #{{{2
