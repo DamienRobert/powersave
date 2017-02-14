@@ -38,7 +38,7 @@ do_save_state() {
 	} >  $STATE_FILE
 }
 save_state() {
-	do_save_state $@
+	do_save_state
 }
 load_state() {
 	[[ -r $STATE_FILE ]] && . $STATE_FILE
@@ -146,10 +146,9 @@ handle_disks() { #{{{2
 			;;
 	esac
 	# disks
+	[[ -n $DISK_READAHEAD ]] && HDPARM_OPTS+=(-a $DISK_READAHEAD)
 	echo "- hdparm $HDPARM_OPTS $disks"
 	hdparm $HDPARM_OPTS $disks
-	echo "- Disks readahead: $DISK_READAHEAD ($disks)"
-	blockdev --setfra $DISK_READAHEAD $disks
 }
 
 handle_cpu() { #{{{2

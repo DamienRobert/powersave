@@ -1,5 +1,6 @@
-Wifi:
-  iwconfig wlan0 txpower on
+Wifi on/off:
+  iwconfig wlan0 txpower on/off
+  (but usually just using rfkill is enough)
 
 Buses:
 - power/control:
@@ -9,13 +10,23 @@ Buses:
 - power/autosuspend_delay_ms: non activity delay before suspend
 - power/autosuspend: only for usb, like autosuspend_delay_ms but in seconds
 
-The problem: on arch, usb/*/power/autosuspend is set to 2 (ie 2sec)
-already, and usb/*/power/control is set to 'auto' for some devices, and
-'on' for others. More generally, everything is set to 'auto', except all pci
-devices set to 'on', and some scsi devices+usb devices set to on.
-So putting everything back to 'on' for 'performance' is a bit of an
-overkill, I leave everything to 'auto' except pci buses which are set ton
-'on'.
+  The problem: on arch, usb/*/power/autosuspend is set to 2 (ie 2sec)
+  already, and usb/*/power/control is set to 'auto' for some devices, and
+  'on' for others. More generally, everything is set to 'auto', except all
+  pci devices set to 'on', and some scsi devices+usb devices set to on. So
+  putting everything back to 'on' for 'performance' is a bit of an
+  overkill, I leave everything to 'auto' except pci buses which are set to
+  'on'.
+
+cpu power:
+  https://www.kernel.org/doc/Documentation/cpu-freq/intel-pstate.txt
+  In practice the defaults look good enough, one can just adjusts the
+  performance bias.
+
+Filesystem readahead:
+- add (-a 2048) to HDPARM_OPTS to augment readahead
+ (or use blockdev --setfra $readahead $disks)
+ [default readahead on power is 256]
 
 Laptop Mode:
 cf power.d/laptomode in pm-utils or https://www.kernel.org/doc/Documentation/laptops/laptop-mode.txt or http://www.cyrius.com/debian/nslu2/linux-on-flash.html:
@@ -48,9 +59,6 @@ cf power.d/laptomode in pm-utils or https://www.kernel.org/doc/Documentation/lap
 #   in one go.
 
 Further settings:
-- add (-a 2048) to HDPARM_OPTS to augment readahead
- (or use blockdev --setfra $readahead $disks)
- [default readahead on power is 256]
 - Use mount -o remount,commit=600 / &> /dev/null to increase the interval of periodic commit? [30 seconds by default; works for ext[34] fs and btrfs]
 For instance from https://github.com/intelfx/power-management
 function handle_filesystems() {
@@ -63,3 +71,18 @@ function handle_filesystems() {
     esac
   done < /proc/mounts
 }
+- xfs settings (cf tlp source code) [are they orthogonal to the vm settings?]:
+/proc/sys/fs/xfs/age_buffer_centisecs
+/proc/sys/fs/xfs/xfssyncd_centisecs; do
+/proc/sys/fs/xfs/xfsbufd_centisecs
+
+TODO:
+- energyperf
+- usb powersave: check for hid/wwan subdevices
+- ahci controllers powersave: https://www.phoronix.com/scan.php?page=news_item&px=Linux-4.6-AHCI-Runtime-PM
+"To enable the support, you must enable runtime power management for all
+SATA ports (via the /sys/bus/pci/devices/*/ata*/power/control), enabling
+the new host controller PM via /sys/bus/pci/devices/*/power/control, and
+then enabling the power management for the disk via
+/sys/block/*/device/power/control (and also specifying the
+autosuspend_delay_ms via sysfs too."
