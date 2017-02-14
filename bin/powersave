@@ -46,17 +46,6 @@ save_and_load_state() {
 	load_state
 }
 
-write_files() {
-	local file value
-	value=$1
-	if [[ -n $value ]]; then
-		shift
-		for file in $@; do
-			[[ -w $file ]] && echo -n $value > $file
-		done
-	fi
-}
-
 # Powersave subfunctions {{{1
 handle_modules() { #{{{2
 	if [[ -n $MODULES ]]; then
@@ -184,16 +173,15 @@ handle_netdev() { #{{{2
 handle_brightness() { #{{{2
 	local light
 	echo "- backlights: $backlights"
-	for light in $backlights; do
-		case $mode in
-			performance)
-				get_brightness --increase '$max_brightness' $light ;;
-			powersave)
-				get_brightness --decrease '$max_brightness/3' $light ;;
-		esac
-		echo "-> $(basename $light)/brightness: $brightness ($cur_brightness)"
-		[[ -n $brightness ]] && write_files $brightness "$light/brightness"
-	done
+	case $mode in
+		performance)
+			BRIGHTNESS=${BRIGHTNESS:-max}
+			;;
+		powersave)
+			BRIGHTNESS=${BRIGHTNESS:-low}
+			;;
+	esac
+	set_brightness --auto $BRIGHTNESS $backlights
 }
 
 handle_screen() { #{{{2
@@ -326,8 +314,9 @@ do_powersave() {
 do_powersave_user() {
 	handle_screen
 }
-#}}}1
 
+#}}}1
+#override to set custom variables settings
 powersave() {
 	do_powersave $@
 }
@@ -338,26 +327,6 @@ user_powersave() {
 #to change powersave settings, just redefine powersave() and wrap around
 #do_powersave if needed
 [[ -r @ETC_DIR@/powersave.config ]] && . @ETC_DIR@/powersave.config
-
-find_devices() {
-	#only run if disks is not defined
-	#to have empty disks just set disks=() in pre_vars
-	if [[ -z ${disks+defined} ]]; then
-		find_disks --sata
-	fi
-	if [[ -z ${netdevs+defined} ]]; then
-		find_netdevs
-	fi
-	if [[ -z ${backlights+defined} ]]; then
-		find_backlights
-	fi
-	if [[ -z ${displays+defined} ]]; then
-		find_displays
-	fi
-	if [[ -z ${buses+defined} ]]; then
-		find_buses
-	fi
-}
 
 get_mode() {
 	case $1 in
@@ -378,13 +347,16 @@ syst_run() {
 }
 
 user_run() {
+	local configfile
+	configfile="${XDG_CONFIG_HOME:-$HOME/.config}/powersave/powersave.config"
+	[[ -r $configfile ]] && . $configfile
 	get_mode $1; shift
 	user_powersave $@
 }
 
 case $1 in
-	status) shift; status $@ ;;
-	brightness) shift; get_brightness $@ ;;
+	status) shift; find_devices; status $@ ;;
+	get_brightness) shift; get_brightness $@ ;;
 	user) shift; user_run $@ ;;
 	syst|*) shift; syst_run $@ ;;
 esac

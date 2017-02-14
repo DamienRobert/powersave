@@ -87,3 +87,23 @@ find_buses() {
 	find_ahci_buses
 	buses=($bci_buses $usb_buses $ahci_buses)
 }
+
+find_devices() {
+	#only run if disks is not defined
+	#to have empty disks just set disks=() in pre_vars
+	if [[ -z ${disks+defined} ]]; then
+		find_disks --sata
+	fi
+	if [[ -z ${netdevs+defined} ]]; then
+		find_netdevs
+	fi
+	if [[ -z ${backlights+defined} ]]; then
+		find_backlights
+	fi
+	if [[ -z ${displays+defined} ]]; then
+		find_displays
+	fi
+	if [[ -z ${buses+defined} ]]; then
+		find_buses
+	fi
+}

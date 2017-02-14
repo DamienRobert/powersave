@@ -57,8 +57,14 @@ get_brightness() { #{{{2
 	do
 		case $1 in
 			-- ) break ;;
+			--auto ) shift; 
+				case $mode in
+					powersave) change_mode="decrease" ;; #only decrease brightness
+					performance) change_mode="increase" ;; #only increase brightness
+					;;
+				;;
 			--increase ) shift; change_mode="increase" ;; #only increase brightness
-			--decrease ) shift; change_mode="decrease" ;;
+			--decrease ) shift; change_mode="decrease" ;; #only decrease brightness
 			*) break;;
 		esac
 	done
@@ -75,6 +81,11 @@ get_brightness() { #{{{2
 	[[ -r "$backlight/brightness" ]] && cur_brightness=$(cat "$backlight/brightness")
 	[[ -r "$backlight/actual_brightness" ]] && cur_brightness=$(cat "$backlight/actual_brightness")
 	if [[ -n $apply_brightness ]]; then
+		case $apply_brightness in
+			max) apply_brightness='$max_brightness' ;;
+			low) apply_brightness='$max_brightness/3' ;;
+			min) apply_brightness='$max_brightness/10' ;;
+		esac
 		eval "(( brightness = $apply_brightness ))"
 		case $change_mode in
 			increase)
@@ -85,4 +96,92 @@ get_brightness() { #{{{2
 			;;
 		esac
 	fi
+}
+
+set_brightness() {
+	local bright light dpms opt
+	while true;
+	do
+		case $1 in
+			-- ) break ;;
+			--auto|--increase|--decrease ) opt="$1"; shift ;;
+			*) break;;
+		esac
+	done
+	bright=$1
+	echo "- brigthness: $bright (dpms: $dpms)"
+	if [[ -n $bright ]]; then
+		for light in /sys/class/backlight/$^@; do
+			get_brightness $opt $bright $light
+			echo "-> $(basename $light)/brightness: $brightness ($cur_brightness)"
+			write_files $brightness "$light/brightness"
+		done
+	fi
+}
+
+write_files() {
+	local file value rvalue
+	value=$1
+	if [[ -n $value ]]; then
+		shift
+		for file in $@; do
+			if [[ -r $file ]]; then
+				rvalue=$(<$file)
+				return if [[ $rvalue == $value ]]
+			fi
+			if [[ -n $SUDO_WRITE -a $UID -neq 0 ]]; then
+				sudo sh -c "echo -n $value > $file"
+			else
+				if [[ -w $file ]]
+					echo "$value > $file"
+					echo -n $value > $file
+				end
+			fi
+		done
+	fi
+}
+
+test_connection() {
+	ip addr show dev $1 | grep "state UP" >/dev/null 2>&1
+}
+is_connected() {
+	local dev
+	connected=
+	for dev in $netdevs; do
+		test_connection $dev && connected=t
+	done
+}
+
+test_bt_connection() {
+	hciconfig | grep 'UP' >/dev/null 2>&1
+}
+
+#from tlp-functions.in:
+get_sys_power_supply() { # get current power source
+	# rc: 0=ac, 1=battery, 2=unknown
+	local psrc
+	local rc=
+	for psrc in /sys/class/power_supply/*; do
+		# -f $psrc/type not necessary - cat 2>.. handles this
+		case "$(cat $psrc/type 2> /dev/null)" in
+			Mains)
+				# AC detected, check if online
+				if [ "$(cat $psrc/online 2> /dev/null)" = "1" ]; then
+					rc=0
+					break
+				fi
+				# else AC not online => keep $rc as-is
+				;;
+			Battery)
+				# set rc to battery, but don't stop looking for AC
+				rc=1
+				;;
+			*)
+				echo "unknown power supply: ${psrc##*/}"
+				;;
+		esac
+	done
+	# set rc to unknown if we haven't seen any AC/battery power source so far
+	: ${rc:=2}
+	return $rc
 }
