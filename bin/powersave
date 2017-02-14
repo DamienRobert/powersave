@@ -1,15 +1,6 @@
 #!/usr/bin/env zsh
 # vim: fdm=marker
 
-case $1 in
-	false)
-		mode="performance"
-		;;
-	*)
-		mode="powersave"
-		;;
-esac
-
 #Helper functions {{{1
 . "@LIB_DIR@/find_dev.zsh"
 . "@LIB_DIR@/powersave.zsh"
@@ -97,7 +88,7 @@ handle_bus() { #{{{2
 	# bus
 	echo "- Bus power control: $BUS_POWERCONTROL"
 	find_buses
-	write_files $BUS_POWERCONTROL $all_buses
+	write_files $BUS_POWERCONTROL $buses
 	#scsi
 	echo "- Sata ALPM: $SATA_ALPM"
 	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
@@ -219,6 +210,8 @@ handle_screen() { #{{{2
 			;;
 	esac
 	echo "-> xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS [displays: $displays]"
+	#in user mode DISPLAY is set
+	[[ -n $DISPLAY ]] && displays=($DISPLAY)
 	for disp in $displays; do
 		DISPLAY=$disp xset $XSET_DPMS
 		DISPLAY=$disp xset dpms $XSET_DPMS_OPTIONS
@@ -328,31 +321,72 @@ do_powersave() {
 			;;
 	esac
 }
+
+#powersave functions that can be set by the user
+do_powersave_user() {
+	handle_screen
+}
 #}}}1
 
 powersave() {
 	do_powersave $@
 }
+user_powersave() {
+	do_powersave_user $@
+}
+
 #to change powersave settings, just redefine powersave() and wrap around
 #do_powersave if needed
 [[ -r @ETC_DIR@/powersave.config ]] && . @ETC_DIR@/powersave.config
 
-#only run if disks is not defined
-#to have empty disks just set disks=() in pre_vars
-if [[ -z ${disks+defined} ]]; then
-	find_disks --sata
-fi
-if [[ -z ${netdevs+defined} ]]; then
-	find_netdevs
-fi
-if [[ -z ${backlights+defined} ]]; then
-	find_backlights
-fi
-if [[ -z ${displays+defined} ]]; then
-	find_displays
-fi
+find_devices() {
+	#only run if disks is not defined
+	#to have empty disks just set disks=() in pre_vars
+	if [[ -z ${disks+defined} ]]; then
+		find_disks --sata
+	fi
+	if [[ -z ${netdevs+defined} ]]; then
+		find_netdevs
+	fi
+	if [[ -z ${backlights+defined} ]]; then
+		find_backlights
+	fi
+	if [[ -z ${displays+defined} ]]; then
+		find_displays
+	fi
+	if [[ -z ${buses+defined} ]]; then
+		find_buses
+	fi
+}
 
-save_and_load_state
-powersave $@
+get_mode() {
+	case $1 in
+		false)
+			mode="performance"
+			;;
+		*)
+			mode="powersave"
+			;;
+	esac
+}
+
+syst_run() {
+	save_and_load_state
+	find_devices
+	get_mode $1; shift
+	powersave $@
+}
+
+user_run() {
+	get_mode $1; shift
+	user_powersave $@
+}
+
+case $1 in
+	status) shift; status $@ ;;
+	brightness) shift; get_brightness $@ ;;
+	user) shift; user_run $@ ;;
+	syst|*) shift; syst_run $@ ;;
+esac
 
 exit 0

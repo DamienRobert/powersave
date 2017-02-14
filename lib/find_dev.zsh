@@ -85,5 +85,5 @@ find_buses() {
 	find_pci_buses
 	find_usb_buses
 	find_ahci_buses
-	all_buses=($bci_buses $usb_buses $ahci_buses)
+	buses=($bci_buses $usb_buses $ahci_buses)
 }

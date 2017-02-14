@@ -3,6 +3,8 @@
 #from: https://gist.github.com/Apsu/3433066
 if (($1)); then # 1 = plug
   systemctl --no-block start power-performance.target
+  systemctl --no-block --global start power-performance.target
 else # 0 = battery
   systemctl --no-block start power-save.target
+  systemctl --no-block --global start power-save.target
 fi
