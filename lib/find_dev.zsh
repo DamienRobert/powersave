@@ -75,7 +75,7 @@ find_pci_buses() {
 }
 find_ahci_buses() {
 	#only go to 2 levels to find pci buses
-	ahci_buses=(/sys/bus/pci/devices/**/ata*/power/control(N))
+	ahci_buses=(/sys/devices/**/ata*/power/control(N))
 }
 find_usb_buses() {
 	#only go to 2 levels to find pci buses
@@ -85,7 +85,7 @@ find_buses() {
 	find_pci_buses
 	find_usb_buses
 	find_ahci_buses
-	buses=($bci_buses $usb_buses $ahci_buses)
+	buses=($pci_buses $usb_buses $ahci_buses)
 }
 
 get_devices() {

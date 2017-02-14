@@ -101,7 +101,7 @@ get_brightness() { #{{{2
 }
 
 set_brightness() {
-	local bright light dpms opt
+	local bright light opt
 	while true;
 	do
 		case $1 in
@@ -111,7 +111,7 @@ set_brightness() {
 		esac
 	done
 	bright=$1; shift
-	echo "- brigthness: $bright (dpms: $dpms)"
+	echo "- brigthness: $bright"
 	if [[ -n $bright ]]; then
 		for light in $@; do
 			get_brightness $opt $bright $light
@@ -123,6 +123,7 @@ set_brightness() {
 
 write_files() {
 	local file value rvalue
+	echo "# write_files $@"
 	value=$1
 	if [[ -n $value ]]; then
 		shift
@@ -135,7 +136,7 @@ write_files() {
 				sudo sh -c "echo -n $value > $file"
 			else
 				if [[ -w $file ]]; then
-					echo "$value > $file"
+					echo "echo $value > $file"
 					echo -n $value > $file
 				fi
 			fi

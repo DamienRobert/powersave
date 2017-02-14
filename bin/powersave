@@ -330,10 +330,14 @@ user_powersave() {
 
 get_mode() {
 	case $1 in
-		false)
+		false|performance|ac)
 			mode="performance"
 			;;
+		true|powersave|bat*)
+			mode="powersave"
+			;;
 		*)
+			echo "Mode '$1' unknown, fallback to 'powersave'"
 			mode="powersave"
 			;;
 	esac
@@ -355,9 +359,10 @@ user_run() {
 }
 
 case $1 in
-	status) shift; status $@ ;;
+	status) shift; powersave_status $@ ;;
 	user) shift; user_run $@ ;;
-	syst|*) shift; syst_run $@ ;;
+	syst) shift; syst_run $@ ;;
+	*) syst_run $@ ;;
 esac
 
 exit 0
