@@ -88,7 +88,7 @@ find_buses() {
 	buses=($bci_buses $usb_buses $ahci_buses)
 }
 
-find_devices() {
+get_devices() {
 	#only run if disks is not defined
 	#to have empty disks just set disks=() in pre_vars
 	if [[ -z ${disks+defined} ]]; then

@@ -1,6 +1,8 @@
 # vim: ft=zsh
 
 powersave_status() {
+	local dev
+
 	print_status() {
 		for file in $@; do
 			[[ -r $file ]] && echo "$file: $(cat $file)"
@@ -18,7 +20,7 @@ powersave_status() {
 			done
 			;;
 		*)
-			find_buses
+			get_devices
 			echo "*** DEVICES POWER CONTROL ***"
 			print_status $buses
 			echo "*** USB POWER AUTOSUSPEND ***"
@@ -34,12 +36,13 @@ powersave_status() {
 			# kernel write mode
 			sysctl vm.laptop_mode vm.dirty_writeback_centisecs vm.dirty_expire_centisecs vm.dirty_ratio vm.dirty_background_ratio
 			echo "*** DISK POWERSAVE ***"
-			sudo hdparm -aB $disks
+			[[ -n $disks ]] && sudo hdparm -aB $disks
 			print_status /sys/class/scsi_host/host*/link_power_management_policy
 			echo "*** MONITOR, CPU, WIRELESS ***"
 			# screen powersave
 			print_status /sys/class/backlight/*/brightness
-			cpupower frequency-info -g # cpu
+			cpupower frequency-info # cpu
+			cpupower info # cpu perf bias
 			for dev in $netdevs_wlan; do
 				echo -n "- $dev power save:"
 				iw dev $dev get power_save
@@ -57,12 +60,11 @@ get_brightness() { #{{{2
 	do
 		case $1 in
 			-- ) break ;;
-			--auto ) shift; 
+			--auto ) shift
 				case $mode in
 					powersave) change_mode="decrease" ;; #only decrease brightness
 					performance) change_mode="increase" ;; #only increase brightness
-					;;
-				;;
+				esac ;;
 			--increase ) shift; change_mode="increase" ;; #only increase brightness
 			--decrease ) shift; change_mode="decrease" ;; #only decrease brightness
 			*) break;;
@@ -108,10 +110,10 @@ set_brightness() {
 			*) break;;
 		esac
 	done
-	bright=$1
+	bright=$1; shift
 	echo "- brigthness: $bright (dpms: $dpms)"
 	if [[ -n $bright ]]; then
-		for light in /sys/class/backlight/$^@; do
+		for light in $@; do
 			get_brightness $opt $bright $light
 			echo "-> $(basename $light)/brightness: $brightness ($cur_brightness)"
 			write_files $brightness "$light/brightness"
@@ -127,15 +129,15 @@ write_files() {
 		for file in $@; do
 			if [[ -r $file ]]; then
 				rvalue=$(<$file)
-				return if [[ $rvalue == $value ]]
+				[[ $rvalue = $value ]] && return
 			fi
-			if [[ -n $SUDO_WRITE -a $UID -neq 0 ]]; then
+			if [[ -n $SUDO_WRITE && $UID -ne 0 ]]; then
 				sudo sh -c "echo -n $value > $file"
 			else
-				if [[ -w $file ]]
+				if [[ -w $file ]]; then
 					echo "$value > $file"
 					echo -n $value > $file
-				end
+				fi
 			fi
 		done
 	fi

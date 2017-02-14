@@ -81,7 +81,7 @@ handle_bus() { #{{{2
 	#scsi
 	echo "- Sata ALPM: $SATA_ALPM"
 	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
-	# usb autosuspend
+	# usb autosuspend (don't change by default)
 	if [[ -n $USB_AUTOSUSPEND ]]; then
 		echo "- Usb auto suspend: $USB_AUTOSUSPEND"
 		write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
@@ -131,7 +131,7 @@ handle_disks() { #{{{2
 	# disks
 	[[ -n $DISK_READAHEAD ]] && HDPARM_OPTS+=(-a $DISK_READAHEAD)
 	echo "- hdparm $HDPARM_OPTS $disks"
-	hdparm $HDPARM_OPTS $disks
+	[[ -n $disks ]] && hdparm $HDPARM_OPTS $disks
 }
 
 handle_cpu() { #{{{2
@@ -269,7 +269,7 @@ handle_nmi() { #{{{2
 
 restore_pci_control() { #{{{2
 	#Only restore the on status for pci devices
-	for i in /sys/bus/pci/devices/*/power/control; do echo on > $i; done
+	write_files 'on' $pci_buses $ahci_buses
 }
 
 # Global powersave function {{{1
@@ -341,7 +341,7 @@ get_mode() {
 
 syst_run() {
 	save_and_load_state
-	find_devices
+	get_devices
 	get_mode $1; shift
 	powersave $@
 }
@@ -355,8 +355,7 @@ user_run() {
 }
 
 case $1 in
-	status) shift; find_devices; status $@ ;;
-	get_brightness) shift; get_brightness $@ ;;
+	status) shift; status $@ ;;
 	user) shift; user_run $@ ;;
 	syst|*) shift; syst_run $@ ;;
 esac
