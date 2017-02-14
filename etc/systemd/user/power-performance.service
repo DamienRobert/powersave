@@ -1,0 +1,11 @@
+[Unit]
+Description=Power performance mode (global service)
+PartOf=power-performance.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=@BIN_DIR@/powersave user false
+
+[Install]
+WantedBy=power-performance.target
