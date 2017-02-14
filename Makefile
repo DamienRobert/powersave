@@ -14,6 +14,8 @@ munge_files=\
   $(DESTDIR)$(bin_dir)/powersave \
   $(DESTDIR)$(etc_dir)/systemd/system/power-performance.service \
   $(DESTDIR)$(etc_dir)/systemd/system/power-save.service \
+  $(DESTDIR)$(etc_dir)/systemd/user/power-performance.service \
+  $(DESTDIR)$(etc_dir)/systemd/user/power-save.service \
   $(DESTDIR)$(etc_dir)/udev/rules.d/50-powersave.rules
 
 define munge
