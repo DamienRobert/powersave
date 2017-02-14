@@ -86,23 +86,26 @@ handle_bus() { #{{{2
 	BUS_POWERCONTROL=${BUS_POWERCONTROL:-auto}
 	case $mode in
 		performance)
-			USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-2}
+			#USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-2}
 			SATA_ALPM=${SATA_ALPM:-max_performance}
 			;;
 		powersave)
-			USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-1}
+			#USB_AUTOSUSPEND=${USB_AUTOSUSPEND:-1}
 			SATA_ALPM=${SATA_ALPM:-min_power}
 			;;
 	esac
 	# bus
 	echo "- Bus power control: $BUS_POWERCONTROL"
-	write_files $BUS_POWERCONTROL /sys/bus/*/devices/*/power/control
+	find_buses
+	write_files $BUS_POWERCONTROL $all_buses
 	#scsi
 	echo "- Sata ALPM: $SATA_ALPM"
 	write_files $SATA_ALPM /sys/class/scsi_host/host*/link_power_management_policy
 	# usb autosuspend
-	echo "- Usb auto suspend: $USB_AUTOSUSPEND"
-	write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
+	if [[ -n $USB_AUTOSUSPEND ]]; then
+		echo "- Usb auto suspend: $USB_AUTOSUSPEND"
+		write_files $USB_AUTOSUSPEND /sys/bus/usb/devices/*/power/autosuspend
+	fi
 }
 
 handle_sysctl() { #{{{2

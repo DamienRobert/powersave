@@ -24,9 +24,9 @@ cpu power:
   performance bias.
 
 Filesystem readahead:
-- add (-a 2048) to HDPARM_OPTS to augment readahead
- (or use blockdev --setfra $readahead $disks)
- [default readahead on power is 256]
+  use hdparm -a 2048 $disks to augment readahead
+  or use blockdev --setfra $readahead $disks
+  [default readahead on power is 256]
 
 Laptop Mode:
 cf power.d/laptomode in pm-utils or https://www.kernel.org/doc/Documentation/laptops/laptop-mode.txt or http://www.cyrius.com/debian/nslu2/linux-on-flash.html:

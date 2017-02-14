@@ -18,8 +18,9 @@ powersave_status() {
 			done
 			;;
 		*)
+			find_buses
 			echo "*** DEVICES POWER CONTROL ***"
-			print_status /sys/bus/*/devices/*/power/control
+			print_status $all_buses
 			echo "*** USB POWER AUTOSUSPEND ***"
 			print_status /sys/bus/usb/devices/*/power/autosuspend
 			echo "*** MISC ***"

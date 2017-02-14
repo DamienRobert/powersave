@@ -68,3 +68,22 @@ find_labels() {
 		labels+=($(findfs $dev))
 	done
 }
+
+find_pci_buses() {
+	#only go to 2 levels to find pci buses
+	pci_buses=(/sys/bus/pci/devices/*/power/control(N) /sys/bus/pci/devices/*/????:??:??.?/power/control(N))
+}
+find_ahci_buses() {
+	#only go to 2 levels to find pci buses
+	ahci_buses=(/sys/bus/pci/devices/**/ata*/power/control(N))
+}
+find_usb_buses() {
+	#only go to 2 levels to find pci buses
+	usb_buses=(/sys/bus/usb/devices/*/power/control(N))
+}
+find_buses() {
+	find_pci_buses
+	find_usb_buses
+	find_ahci_buses
+	all_buses=($bci_buses $usb_buses $ahci_buses)
+}
