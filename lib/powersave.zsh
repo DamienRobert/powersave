@@ -23,22 +23,22 @@ powersave_status() {
 			get_devices
 			echo "*** DEVICES POWER CONTROL ***"
 			print_status $buses
-			echo "*** USB POWER AUTOSUSPEND ***"
+			echo "\n*** USB POWER AUTOSUSPEND ***"
 			print_status /sys/bus/usb/devices/*/power/autosuspend
-			echo "*** MISC ***"
+			echo "\n*** MISC ***"
 			print_status /proc/sys/kernel/nmi_watchdog
-			echo "*** SOUND ***"
+			echo "\n*** SOUND ***"
 			print_status /sys/module/snd_*/parameters/power_save /sys/module/snd_*/parameters/power_save_controller
-			echo "*** VIDEO ***"
+			echo "\n*** VIDEO ***"
 			print_status /sys/module/pcie_aspm/parameters/policy
 			print_status /sys/module/i915/parameters/{powersave,enable_rc6,enable_fbc,lvds_downclock}
-			echo "*** KERNEL WRITE MODE ***"
+			echo "\n*** KERNEL WRITE MODE ***"
 			# kernel write mode
 			sysctl vm.laptop_mode vm.dirty_writeback_centisecs vm.dirty_expire_centisecs vm.dirty_ratio vm.dirty_background_ratio
-			echo "*** DISK POWERSAVE ***"
+			echo "\n*** DISK POWERSAVE ***"
 			[[ -n $disks ]] && sudo hdparm -aB $disks
 			print_status /sys/class/scsi_host/host*/link_power_management_policy
-			echo "*** MONITOR, CPU, WIRELESS ***"
+			echo "\n*** MONITOR, CPU, WIRELESS ***"
 			# screen powersave
 			print_status /sys/class/backlight/*/brightness
 			cpupower frequency-info # cpu
