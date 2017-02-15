@@ -198,9 +198,10 @@ get_systemd_users() {
 }
 
 run_global_service() {
-	local user
+	local user service
+	service=$1
 	get_systemd_users
 	for user in ($systemd_users); do
-		sudo -u $user systemctl --user $@
+		sudo -u $user sh -c "systemctl --user is-enabled $service && systemctl --user --no-block start $service"
 	done
 }

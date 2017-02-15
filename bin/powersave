@@ -347,9 +347,9 @@ global_user_run() {
 	#also launch in running user sessions
 	case $mode in
 		"performance" ) 
-			run_global_service --no-block start power-performance.target ;;
+			run_global_service power-performance.target ;;
 		"powersave" ) 
-			run_global_service --no-block start power-powersave.target ;;
+			run_global_service power-save.target ;;
 	esac
 }
 
