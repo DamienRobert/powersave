@@ -188,3 +188,19 @@ get_sys_power_supply() { # get current power source
 	: ${rc:=2}
 	return $rc
 }
+
+get_systemd_users() {
+	local i
+	systemd_users=()
+	for i in /run/user/*/systemd; do
+		systemd_users+=($(id -un ${${i#/run/user/}%/systemd}))
+	done
+}
+
+run_global_service() {
+	local user
+	get_systemd_users
+	for user in ($systemd_users); do
+		sudo -u $user systemctl --user $@
+	done
+}

@@ -343,10 +343,21 @@ get_mode() {
 	esac
 }
 
+global_user_run() {
+	#also launch in running user sessions
+	case $mode in
+		"performance" ) 
+			run_global_service --no-block start power-performance.target ;;
+		"powersave" ) 
+			run_global_service --no-block start power-powersave.target ;;
+	esac
+}
+
 syst_run() {
 	save_and_load_state
 	get_devices
 	get_mode $1; shift
+	global_user_run
 	powersave $@
 }
 
