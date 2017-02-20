@@ -18,4 +18,4 @@ enabled.
 
 Copyright © 2014–2016 Damien Robert
 
-MIT License. See {file:COPYING} for more details.
+MIT License. See [LICENSE.txt](./LICENSE.txt) for details.
