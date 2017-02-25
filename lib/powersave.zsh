@@ -207,6 +207,6 @@ run_global_service() {
 		user=$systemd_users[i]
 		bus=$systemd_users_bus[i]
 		echo "Running $service for $user"
-		sudo -u $user sh -c "DBUS_SESSION_BUS_ADDRESS='$bus' systemctl --user is-enabled '$service' && systemctl --user --no-block start '$service'"
+		sudo -u $user sh -c "export DBUS_SESSION_BUS_ADDRESS='$bus'; systemctl --user is-enabled '$service' && systemctl --user --no-block start '$service'"
 	done
 }
