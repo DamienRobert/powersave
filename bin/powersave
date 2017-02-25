@@ -356,7 +356,7 @@ global_user_run() {
 syst_run() {
 	save_and_load_state
 	get_devices
-	get_mode $1; shift
+	get_mode $1; [[ -n $@ ]] && shift
 	global_user_run
 	powersave $@
 }
@@ -365,7 +365,7 @@ user_run() {
 	local configfile
 	configfile="${XDG_CONFIG_HOME:-$HOME/.config}/powersave/powersave.config"
 	[[ -r $configfile ]] && . $configfile
-	get_mode $1; shift
+	get_mode $1;  [[ -n $@ ]] && shift
 	user_powersave $@
 }
 

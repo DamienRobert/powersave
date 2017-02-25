@@ -192,16 +192,21 @@ get_sys_power_supply() { # get current power source
 get_systemd_users() {
 	local i
 	systemd_users=()
+	systemd_users_bus=()
 	for i in /run/user/*/systemd; do
 		systemd_users+=($(id -un ${${i#/run/user/}%/systemd}))
+		systemd_users_bus+=("unix:path=${i%/systemd}/bus")
 	done
 }
 
 run_global_service() {
-	local user service
+	local user service bus i
 	service=$1
 	get_systemd_users
-	for user in ($systemd_users); do
-		sudo -u $user sh -c "systemctl --user is-enabled $service && systemctl --user --no-block start $service"
+	for ((i=1; i<=$#systemd_users; i++)); do
+		user=$systemd_users[i]
+		bus=$systemd_users_bus[i]
+		echo "Running $service for $user"
+		sudo -u $user sh -c "DBUS_SESSION_BUS_ADDRESS='$bus' systemctl --user is-enabled '$service' && systemctl --user --no-block start '$service'"
 	done
 }
