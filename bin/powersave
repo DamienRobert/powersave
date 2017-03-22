@@ -199,7 +199,7 @@ handle_screen() { #{{{2
 	esac
 	echo "-> xset: $XSET_DPMS; xset dpsm: $XSET_DPMS_OPTIONS [displays: $displays]"
 	#in user mode DISPLAY is set
-	[[ -n $DISPLAY ]] && displays=($DISPLAY)
+	[[ -z $displays ]] && [[ -n $DISPLAY ]] && displays=($DISPLAY)
 	for disp in $displays; do
 		DISPLAY=$disp xset $XSET_DPMS
 		DISPLAY=$disp xset dpms $XSET_DPMS_OPTIONS
@@ -357,7 +357,9 @@ syst_run() {
 	save_and_load_state
 	get_devices
 	get_mode $1; [[ -n $@ ]] && shift
-	global_user_run
+	#We don't run global_user_run by default on syst_run
+	#To override just add it to powersave
+	#global_user_run
 	powersave $@
 }
 
