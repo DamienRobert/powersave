@@ -275,31 +275,29 @@ restore_pci_control() { #{{{2
 # Global powersave function {{{1
 test_firstcall() {
 	if [[ -n $first_call && $mode == "performance" ]]; then
+		#if called for the first time in ac mode keep the current config
 		echo "First call (performance)"
 		do_powerperformance_firsttime
 		exit 0
 	fi
 }
 do_powerperformance_firsttime() {
-	handle_brightness
+	local hook
+	for hook in $PERF_FIRSTTIME; do
+		handle_$hook
+	done
 }
 do_powersave() {
+	local hook
 	test_firstcall
 	case $mode in
 		performance)
 			handle_modules #at beginning
 			;;
 	esac
-	handle_bus
-	handle_sysctl
-	handle_disks
-	handle_cpu
-	handle_netdev
-	handle_brightness
-	handle_screen
-	handle_video
-	handle_sound
-	handle_nmi
+	for hook in $HOOKS; do
+		handle_$hook
+	done
 	case $mode in
 		performance)
 			restore_pci_control
@@ -312,21 +310,23 @@ do_powersave() {
 
 #powersave functions that can be set by the user
 do_powersave_user() {
-	handle_screen
+	local hook
+	for hook in $HOOKS; do
+		handle_$hook
+	done
 }
 
 #}}}1
-#override to set custom variables settings
+#to change powersave settings
+#- set the variables defaut values
+#- change the HOOKS
+#- for complete customisation just redefine powersave() and wrap around do_powersave if needed
 powersave() {
 	do_powersave $@
 }
 user_powersave() {
 	do_powersave_user $@
 }
-
-#to change powersave settings, just redefine powersave() and wrap around
-#do_powersave if needed
-[[ -r @ETC_DIR@/powersave.config ]] && . @ETC_DIR@/powersave.config
 
 get_mode() {
 	case $1 in
@@ -357,23 +357,29 @@ syst_run() {
 	save_and_load_state
 	get_devices
 	get_mode $1; [[ -n $@ ]] && shift
-	#We don't run global_user_run by default on syst_run
-	#To override just add it to powersave
-	#global_user_run
+	HOOKS=(bus sysctl disks cpu netdev brightness screen video sound nmi)
+	PERF_FIRSTTIME=() #brightness
+	#config file to set custom variables settings (or redefine powersave)
+	[[ -r @ETC_DIR@/powersave.config ]] && . @ETC_DIR@/powersave.config
+
+	#Note: we don't run global_user_run by default on syst_run
+	#To override just add it to powersave or run $0 with 'all_users'
 	powersave $@
 }
 
 user_run() {
 	local configfile
-	configfile="${XDG_CONFIG_HOME:-$HOME/.config}/powersave/powersave.config"
-	[[ -r $configfile ]] && . $configfile
 	get_mode $1;  [[ -n $@ ]] && shift
+	configfile="${XDG_CONFIG_HOME:-$HOME/.config}/powersave/powersave.config"
+	HOOKS=(screen)
+	[[ -r $configfile ]] && . $configfile
 	user_powersave $@
 }
 
 case $1 in
 	status) shift; powersave_status $@ ;;
 	user) shift; user_run $@ ;;
+	all_users) shift; global_user_run ;;
 	syst) shift; syst_run $@ ;;
 	*) syst_run $@ ;;
 esac
