@@ -193,7 +193,7 @@ get_systemd_users() {
 	local i
 	systemd_users=()
 	systemd_users_bus=()
-	for i in /run/user/*/systemd; do
+	for i in /run/user/*/systemd(N); do
 		systemd_users+=($(id -un ${${i#/run/user/}%/systemd}))
 		systemd_users_bus+=("unix:path=${i%/systemd}/bus")
 	done
