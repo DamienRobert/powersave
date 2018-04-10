@@ -156,7 +156,8 @@ is_connected() {
 }
 
 test_bt_connection() {
-	hciconfig | grep 'UP' >/dev/null 2>&1
+	# hciconfig | grep 'UP' >/dev/null 2>&1
+	btmgmt info | grep 'current settings:.*powered' >/dev/null 2>&1
 }
 
 #from tlp-functions.in:
