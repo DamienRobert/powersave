@@ -133,7 +133,7 @@ write_files() {
 				[[ $rvalue = $value ]] && return
 			fi
 			if [[ -n $SUDO_WRITE && $UID -ne 0 ]]; then
-				sudo sh -c "echo -n $value > $file"
+				sudo sh -c "[ -w $file ] && echo -n $value > $file"
 			else
 				if [[ -w $file ]]; then
 					echo "echo $value > $file"

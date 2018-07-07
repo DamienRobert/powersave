@@ -17,14 +17,14 @@ do_save_state() {
 		done
 		sysdir="/sys/module/i915/parameters"
 		if [[ -d $sysdir ]]; then
-			echo "INIT_VIDEO_POWERSAVE=$(cat $sysdir/powersave)"
-			echo "INIT_I915_ENABLE_RC6=$(cat $sysdir/enable_rc6)"
-			echo "INIT_I915_ENABLE_FBC=$(cat $sysdir/enable_fbc)"
-			echo "INIT_I915_LVDS_DOWNCLOCK=$(cat $sysdir/lvds_downclock)"
+			# echo "INIT_VIDEO_POWERSAVE=$(< $sysdir/powersave)"
+			# echo "INIT_I915_ENABLE_RC6=$(< $sysdir/enable_rc6)"
+			echo "INIT_I915_ENABLE_FBC=$(< $sysdir/enable_fbc)"
+			# echo "INIT_I915_LVDS_DOWNCLOCK=$(< $sysdir/lvds_downclock)"
 		fi
 		sysdir="/sys/devices/system/cpu/cpu0/cpufreq"
 		if [[ -d $sysdir ]]; then
-			echo "INIT_CPU_GOVERNOR=$(cat $sysdir/scaling_governor)"
+			echo "INIT_CPU_GOVERNOR=$(< $sysdir/scaling_governor)"
 		fi
 	} >  $STATE_FILE
 }
@@ -210,17 +210,17 @@ handle_video() { #{{{2
 	case $mode in
 		performance)
 			PCIE_ASPM=${PCIE_ASPM:-default}
-			VIDEO_POWERSAVE=${VIDEO_POWERSAVE:-${INIT_VIDEO_POWERSAVE:-1}}
-			I915_ENABLE_RC6=${I915_ENABLE_RC6:-${INIT_I915_ENABLE_RC6:-'-1'}}
+			# VIDEO_POWERSAVE=${VIDEO_POWERSAVE:-${INIT_VIDEO_POWERSAVE:-1}}
+			# I915_ENABLE_RC6=${I915_ENABLE_RC6:-${INIT_I915_ENABLE_RC6:-'-1'}}
 			I915_ENABLE_FBC=${I915_ENABLE_FBC:-${INIT_I915_ENABLE_FBC:-'-1'}}
-			I915_LVDS_DOWNCLOCK=${I915_LVDS_DOWNCLOCK:-${INIT_I915_LVDS_DOWNCLOCK:-0}}
+			# I915_LVDS_DOWNCLOCK=${I915_LVDS_DOWNCLOCK:-${INIT_I915_LVDS_DOWNCLOCK:-0}}
 			;;
 		powersave)
 			PCIE_ASPM=${PCIE_ASPM:-powersave}
-			VIDEO_POWERSAVE=${VIDEO_POWERSAVE:-1}
-			I915_ENABLE_RC6=${I915_ENABLE_RC6:-3}
+			# VIDEO_POWERSAVE=${VIDEO_POWERSAVE:-1}
+			# I915_ENABLE_RC6=${I915_ENABLE_RC6:-3}
 			I915_ENABLE_FBC=${I915_ENABLE_FBC:-1}
-			I915_LVDS_DOWNCLOCK=${I915_LVDS_DOWNCLOCK:-1}
+			# I915_LVDS_DOWNCLOCK=${I915_LVDS_DOWNCLOCK:-1}
 			;;
 	esac
 	# pcie
@@ -229,11 +229,12 @@ handle_video() { #{{{2
 	local sysdir
 	sysdir="/sys/module/i915/parameters"
 	if [[ -d $sysdir ]]; then
-		echo "- i915 -> powersave: $VIDEO_POWERSAVE; rc6: $I915_ENABLE_RC6; fbc: $I915_ENABLE_FBC; lvds_downclock: $I915_LVDS_DOWNCLOCK"
-		write_files $VIDEO_POWERSAVE $sysdir/powersave
-		write_files $I915_ENABLE_RC6 $sysdir/enable_rc6
+		# echo "- i915 -> powersave: $VIDEO_POWERSAVE; rc6: $I915_ENABLE_RC6; fbc: $I915_ENABLE_FBC; lvds_downclock: $I915_LVDS_DOWNCLOCK"
+		echo "- i915 -> fbc: $I915_ENABLE_FBC"
+		# write_files $VIDEO_POWERSAVE $sysdir/powersave
+		# write_files $I915_ENABLE_RC6 $sysdir/enable_rc6
 		write_files $I915_ENABLE_FBC $sysdir/enable_fbc
-		write_files $I915_LVDS_DOWNCLOCK $sysdir/lvds_downclock
+		# write_files $I915_LVDS_DOWNCLOCK $sysdir/lvds_downclock
 	fi
 }
 
