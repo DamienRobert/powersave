@@ -16,6 +16,6 @@ enabled.
 
 ## Copyright
 
-Copyright © 2014–2016 Damien Robert
+Copyright © 2014–2018 Damien Robert
 
 MIT License. See [LICENSE.txt](./LICENSE.txt) for details.
