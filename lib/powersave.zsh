@@ -130,7 +130,7 @@ write_files() {
 		for file in $@; do
 			if [[ -r $file ]]; then
 				rvalue=$(<$file)
-				[[ $rvalue = $value ]] && return
+				[[ $rvalue = $value ]] && continue
 			fi
 			if [[ -n $SUDO_WRITE && $UID -ne 0 ]]; then
 				sudo sh -c "[ -w $file ] && echo -n $value > $file"
