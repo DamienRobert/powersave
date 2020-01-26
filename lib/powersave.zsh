@@ -147,6 +147,9 @@ write_files() {
 test_connection() {
 	ip addr show dev $1 | grep "state UP" >/dev/null 2>&1
 }
+test_maybe_connection() { #match on UP and UNKNOWN
+	! ip addr show dev $1 | grep "state DOWN" >/dev/null 2>&1
+}
 is_connected() {
 	local dev
 	connected=
